@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>My Element RPG</title>
+<style>
+body { margin:0; background:#0b0f1a; color:white; font-family:sans-serif; }
+canvas { display:block; margin:auto; background:#1a2238; }
+#ui {
+ position:fixed;
+ bottom:0;
+ width:100%;
+ background:#111;
+ text-align:center;
+ padding:10px;
+}
+button {
+ padding:10px;
+ margin:5px;
+ border-radius:8px;
+ border:none;
+ background:#222;
+ color:white;
+}
+</style>
+</head>
+<body>
+
+<canvas id="game" width="360" height="520"></canvas>
+
+<div id="ui">
+<button onclick="attack()">⚔️</button>
+<button onclick="skill()">✨</button>
+<button onclick="burst()">💥</button>
+<button onclick="switchChar(0)">①</button>
+<button onclick="switchChar(1)">②</button>
+<button onclick="switchChar(2)">③</button>
+</div>
+
+<script>
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
+
+// ===== セーブ =====
+function save(){
+ localStorage.setItem("gameData", JSON.stringify({
+   playerPos, party, current, mode
+ }));
+}
+function load(){
+ let d = localStorage.getItem("gameData");
+ if(d){
+   let data = JSON.parse(d);
+   playerPos=data.playerPos;
+   party=data.party;
+   current=data.current;
+   mode=data.mode;
+ }
+}
+
+// ===== マップ =====
+const tile = 60;
+const map = [
+[0,0,1,1,1],
+[0,2,2,2,0],
+[0,0,0,2,0],
+[1,1,0,2,0],
+[3,0,0,0,0]
+];
+
+// ===== 画像 =====
+const playerImg = new Image();
+playerImg.src = "https://picsum.photos/seed/player/200";
+
+const enemyImg = new Image();
+enemyImg.src = "https://picsum.photos/seed/enemy/200";
+
+// ===== 状態 =====
+let mode="explore";
+let playerPos={x:0,y:0};
+
+// ===== キャラ =====
+let party=[
+ {name:"炎", element:"fire", hp:100},
+ {name:"氷", element:"ice", hp:90},
+ {name:"水", element:"water", hp:110}
+];
+let current=0;
+
+// ===== 敵 =====
+let enemy={hp:100, element:null};
+
+// ===== ダメージ =====
+let damages=[];
+
+function showDamage(x,y,val){
+ damages.push({x,y,val,life:30});
+}
+
+// ===== 元素反応 =====
+function react(target,newEle){
+ if(!target.element) return 0;
+
+ if((target.element==="fire"&&newEle==="ice") ||
+    (target.element==="ice"&&newEle==="fire")){
+   target.element=null;
+   return 30;
+ }
+
+ if((target.element==="fire"&&newEle==="water") ||
+    (target.element==="water"&&newEle==="fire")){
+   target.element=null;
+   return 40;
+ }
+
+ return 0;
+}
+
+// ===== 戦闘 =====
+function attack(){
+ if(mode!=="battle") return;
+ let char=party[current];
+ let dmg=10+react(enemy,char.element);
+ enemy.hp-=dmg;
+ enemy.element=char.element;
+ showDamage(200,200,dmg);
+ save();
+}
+
+function skill(){
+ if(mode!=="battle") return;
+ enemy.hp-=20;
+ showDamage(200,200,20);
+ save();
+}
+
+function burst(){
+ if(mode!=="battle") return;
+ enemy.hp-=50;
+ showDamage(200,200,50);
+ save();
+}
+
+function switchChar(i){
+ if(party[i].hp>0){
+   current=i;
+ }
+}
+
+// ===== 敵AI =====
+setInterval(()=>{
+ if(mode!=="battle") return;
+
+ let char=party[current];
+ char.hp-=10;
+
+ if(char.hp<=0){
+   autoSwitch();
+ }
+
+ save();
+
+},1500);
+
+function autoSwitch(){
+ for(let i=0;i<3;i++){
+   if(party[i].hp>0){
+     current=i;
+     return;
+   }
+ }
+ reset();
+}
+
+// ===== リセット =====
+function reset(){
+ party=[
+ {name:"炎", element:"fire", hp:100},
+ {name:"氷", element:"ice", hp:90},
+ {name:"水", element:"water", hp:110}
+ ];
+ mode="explore";
+ playerPos={x:0,y:0};
+ save();
+}
+
+// ===== 操作 =====
+canvas.onclick=(e)=>{
+ if(mode==="explore"){
+   playerPos.x=Math.floor(e.offsetX/tile);
+   playerPos.y=Math.floor(e.offsetY/tile);
+
+   if(Math.random()<0.3){
+     mode="battle";
+     enemy.hp=100;
+   }
+   save();
+ }
+};
+
+// ===== 描画 =====
+function draw(){
+ ctx.clearRect(0,0,360,520);
+
+ if(mode==="explore"){
+   for(let y=0;y<map.length;y++){
+     for(let x=0;x<map[y].length;x++){
+       let t=map[y][x];
+       ctx.fillStyle = t===0?"green":t===1?"gray":t===2?"brown":"yellow";
+       ctx.fillRect(x*tile,y*tile,tile,tile);
+     }
+   }
+   ctx.drawImage(playerImg,playerPos.x*tile,playerPos.y*tile,40,40);
+ }
+
+ if(mode==="battle"){
+   let char=party[current];
+   ctx.drawImage(playerImg,50,250,100,100);
+   ctx.drawImage(enemyImg,200,250,100,100);
+
+   ctx.fillText("HP:"+char.hp,20,50);
+   ctx.fillText("敵:"+enemy.hp,200,50);
+
+   if(enemy.hp<=0){
+     mode="explore";
+     save();
+   }
+ }
+
+ // ダメージ表示
+ damages.forEach(d=>{
+   ctx.fillStyle="red";
+   ctx.fillText(d.val,d.x,d.y);
+   d.y--;
+   d.life--;
+ });
+ damages = damages.filter(d=>d.life>0);
+
+ requestAnimationFrame(draw);
+}
+
+load();
+draw();
+</script>
+</body>
+</html>
