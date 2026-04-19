@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Elemental 2D Battle - Advanced Mobile UI</title>
+  <title>Elemental 2D Battle - Wide Mobile Arena</title>
   <style>
     * {
       box-sizing: border-box;
@@ -39,7 +39,7 @@
       touch-action: none;
     }
 
-    /* ---------------- HUD ---------------- */
+    /* ---------------- 固定HUD ---------------- */
 
     #topHud {
       position: absolute;
@@ -63,13 +63,8 @@
       pointer-events: auto;
     }
 
-    #playerHud {
-      width: min(420px, calc(100vw - 140px));
-      padding: 10px 12px;
-    }
-
-    #enemyHud {
-      width: min(300px, 42vw);
+    #leftInfo {
+      width: min(320px, calc(100vw - 140px));
       padding: 10px 12px;
     }
 
@@ -81,47 +76,12 @@
       margin-bottom: 8px;
     }
 
-    .barBox {
-      margin-bottom: 8px;
-    }
-
-    .labelRow {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 4px;
-      font-size: 11px;
-      color: #cfdbff;
-    }
-
-    .bar {
-      width: 100%;
-      height: 12px;
-      background: rgba(255,255,255,0.08);
-      border-radius: 999px;
-      overflow: hidden;
-      position: relative;
-      box-shadow: inset 0 2px 4px rgba(0,0,0,0.20);
-    }
-
-    .fill {
-      height: 100%;
-      width: 50%;
-      transition: width 0.12s linear;
-      border-radius: 999px;
-    }
-
-    .hp { background: linear-gradient(90deg, #2edb85, #88ffbd); }
-    .energy { background: linear-gradient(90deg, #4b8fff, #9ad6ff); }
-    .enemyHp { background: linear-gradient(90deg, #ff6767, #ffb0b0); }
-    .stamina { background: linear-gradient(90deg, #ffcc45, #fff0ab); }
-
     #reactionMiniLog {
       position: absolute;
-      top: 130px;
+      top: 76px;
       right: 12px;
       z-index: 11;
-      width: min(270px, 46vw);
+      width: min(260px, 42vw);
       max-height: 180px;
       overflow: hidden;
       pointer-events: none;
@@ -145,7 +105,64 @@
       to { opacity: 1; transform: translateY(0); }
     }
 
-    /* ---------------- Controls ---------------- */
+    /* ---------------- 画面下プレイヤーバー ---------------- */
+
+    #bottomStatus {
+      position: absolute;
+      left: 50%;
+      bottom: 94px;
+      transform: translateX(-50%);
+      z-index: 12;
+      width: min(520px, calc(100vw - 32px));
+      padding: 10px 12px;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      pointer-events: none;
+    }
+
+    .statusGroup {
+      flex: 1;
+    }
+
+    .barBox {
+      margin-bottom: 8px;
+    }
+
+    .barBox:last-child {
+      margin-bottom: 0;
+    }
+
+    .labelRow {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 4px;
+      font-size: 11px;
+      color: #cfdbff;
+    }
+
+    .bar {
+      width: 100%;
+      height: 13px;
+      background: rgba(255,255,255,0.08);
+      border-radius: 999px;
+      overflow: hidden;
+      position: relative;
+      box-shadow: inset 0 2px 4px rgba(0,0,0,0.20);
+    }
+
+    .fill {
+      height: 100%;
+      width: 50%;
+      transition: width 0.12s linear;
+      border-radius: 999px;
+    }
+
+    .hp { background: linear-gradient(90deg, #2edb85, #88ffbd); }
+    .stamina { background: linear-gradient(90deg, #ffcc45, #fff0ab); }
+
+    /* ---------------- モバイル操作 ---------------- */
 
     #mobileControls {
       position: absolute;
@@ -155,23 +172,31 @@
       touch-action: none;
     }
 
-    /* バーチャルスティック */
-    #joystickArea {
+    /* 左側タッチエリア */
+    #leftTouchArea {
       position: absolute;
-      left: 12px;
-      bottom: 90px;
-      width: 200px;
-      height: 200px;
+      left: 0;
+      top: 0;
+      width: 46vw;
+      height: 100%;
       pointer-events: auto;
       touch-action: none;
     }
 
+    #joystickArea {
+      position: absolute;
+      left: 10px;
+      bottom: 96px;
+      width: 160px; /* 0.8倍 */
+      height: 160px;
+      pointer-events: none;
+      touch-action: none;
+      transition: left 0.14s ease, bottom 0.14s ease;
+    }
+
     #joystickBase {
       position: absolute;
-      left: 20px;
-      bottom: 20px;
-      width: 160px;
-      height: 160px;
+      inset: 0;
       border-radius: 50%;
       background:
         radial-gradient(circle at 30% 30%, rgba(255,255,255,0.12), rgba(255,255,255,0.04) 45%, rgba(0,0,0,0.18) 100%),
@@ -187,46 +212,35 @@
     }
 
     #joystickRing {
-      width: 112px;
-      height: 112px;
+      width: 92px;
+      height: 92px;
       border-radius: 50%;
       border: 1px dashed rgba(255,255,255,0.10);
     }
 
     #joystickKnob {
       position: absolute;
-      left: 68px;
-      top: 68px;
+      left: 48px;
+      top: 48px;
       width: 64px;
       height: 64px;
       border-radius: 50%;
       background:
-        radial-gradient(circle at 30% 30%, rgba(255,255,255,0.18), rgba(255,255,255,0.05) 50%, rgba(0,0,0,0.24) 100%),
-        rgba(62, 92, 173, 0.76);
-      border: 1px solid rgba(255,255,255,0.18);
+        radial-gradient(circle at 30% 30%, rgba(255,255,255,0.22), rgba(255,255,255,0.08) 46%, rgba(0,0,0,0.24) 100%),
+        rgba(72, 110, 210, 0.82);
+      border: 1px solid rgba(255,255,255,0.22);
       box-shadow:
-        inset 0 2px 8px rgba(255,255,255,0.08),
+        inset 0 2px 8px rgba(255,255,255,0.12),
         0 8px 20px rgba(0,0,0,0.22);
       pointer-events: none;
       transition: transform 0.03s linear;
     }
 
-    #joystickHint {
-      position: absolute;
-      width: 100%;
-      text-align: center;
-      bottom: -8px;
-      font-size: 11px;
-      color: rgba(230,240,255,0.78);
-      text-shadow: 0 1px 2px rgba(0,0,0,0.32);
-      pointer-events: none;
-    }
-
-    /* 右下アクション */
+    /* 右下 */
     #actionPad {
       position: absolute;
       right: 12px;
-      bottom: 76px;
+      bottom: 86px;
       width: 248px;
       height: 248px;
       pointer-events: auto;
@@ -251,6 +265,7 @@
         0 10px 24px rgba(0,0,0,0.26);
       backdrop-filter: blur(8px);
       text-shadow: 0 1px 2px rgba(0,0,0,0.28);
+      overflow: hidden;
     }
 
     .touchBtn.active,
@@ -259,12 +274,52 @@
       filter: brightness(1.14);
     }
 
-    .touchBtn .sub {
+    .btnLabel {
+      position: relative;
+      z-index: 2;
+      pointer-events: none;
+    }
+
+    .btnLabel .sub {
       display: block;
       font-size: 10px;
       font-weight: 600;
       opacity: 0.92;
-      margin-top: 1px;
+      margin-top: 2px;
+    }
+
+    .radialFill {
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+      z-index: 1;
+      pointer-events: none;
+      opacity: 0.95;
+      -webkit-mask: radial-gradient(circle, transparent 58%, black 60%);
+              mask: radial-gradient(circle, transparent 58%, black 60%);
+    }
+
+    .radialInnerDim {
+      position: absolute;
+      inset: 7px;
+      border-radius: 50%;
+      background: rgba(0,0,0,0.14);
+      z-index: 1;
+      pointer-events: none;
+    }
+
+    .cooldownText {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 3;
+      font-size: 18px;
+      font-weight: 800;
+      color: #fff4cb;
+      text-shadow: 0 1px 4px rgba(0,0,0,0.45);
+      pointer-events: none;
     }
 
     #btnAttack {
@@ -274,51 +329,60 @@
       bottom: 8px;
       font-size: 18px;
       background:
-        radial-gradient(circle at 30% 25%, rgba(255,255,255,0.18), rgba(255,255,255,0.04) 45%, rgba(0,0,0,0.22) 100%),
-        rgba(205, 88, 88, 0.74);
+        radial-gradient(circle at 30% 25%, rgba(255,255,255,0.18), rgba(255,255,255,0.05) 45%, rgba(0,0,0,0.22) 100%),
+        rgba(205, 88, 88, 0.78);
     }
 
-    #btnAttackCharge {
+    #attackChargeRing {
       position: absolute;
       inset: 0;
       border-radius: 50%;
-      overflow: hidden;
+      z-index: 1;
       pointer-events: none;
+      -webkit-mask: radial-gradient(circle, transparent 70%, black 72%);
+              mask: radial-gradient(circle, transparent 70%, black 72%);
+      background: conic-gradient(from -90deg, rgba(255,235,145,0.0) 0deg, rgba(255,235,145,0.0) 360deg);
+      opacity: 0.98;
     }
 
-    #btnAttackCharge::before {
-      content: "";
+    #attackChargeGlow {
       position: absolute;
-      left: 0; right: 0; bottom: 0;
-      height: var(--charge, 0%);
-      background: linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,230,140,0.30));
+      inset: 10px;
+      border-radius: 50%;
+      z-index: 1;
+      pointer-events: none;
+      background: radial-gradient(circle, rgba(255,236,158,0.24), rgba(255,236,158,0.0) 70%);
+      opacity: 0;
+      transition: opacity 0.08s linear;
     }
 
     #btnSkill {
-      width: 74px;
-      height: 74px;
+      width: 76px;
+      height: 76px;
       right: 96px;
       bottom: 52px;
       font-size: 13px;
       background:
         radial-gradient(circle at 30% 25%, rgba(255,255,255,0.18), rgba(255,255,255,0.04) 45%, rgba(0,0,0,0.22) 100%),
-        rgba(74, 124, 255, 0.76);
+        rgba(74, 124, 255, 0.78);
     }
 
     #btnBurst {
-      width: 88px;
-      height: 88px;
+      width: 90px;
+      height: 90px;
       right: 24px;
       bottom: 114px;
       font-size: 15px;
       background:
         radial-gradient(circle at 30% 25%, rgba(255,255,255,0.18), rgba(255,255,255,0.04) 45%, rgba(0,0,0,0.22) 100%),
-        rgba(255, 191, 62, 0.78);
-      overflow: hidden;
+        rgba(255, 191, 62, 0.58);
+      filter: brightness(0.72);
+      transition: filter 0.18s ease, box-shadow 0.18s ease, background-color 0.18s ease;
     }
 
     #btnBurst.ready {
-      animation: burstPulse 1.05s infinite ease-in-out;
+      filter: brightness(1.18);
+      animation: burstPulse 1.0s infinite ease-in-out;
       box-shadow:
         0 0 0 0 rgba(255,210,80,0.42),
         0 0 24px rgba(255,212,92,0.42),
@@ -336,8 +400,8 @@
     }
 
     @keyframes burstPulse {
-      0%, 100% { transform: scale(1); filter: brightness(1); }
-      50% { transform: scale(1.06); filter: brightness(1.18); }
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.06); }
     }
 
     @keyframes ringPulse {
@@ -463,8 +527,7 @@
       inset: 2px;
       border-radius: 50%;
       pointer-events: none;
-      background:
-        conic-gradient(#5dff9d var(--hpdeg, 100%), rgba(255,255,255,0.08) 0);
+      background: conic-gradient(#5dff9d var(--hpdeg, 100%), rgba(255,255,255,0.08) 0);
       -webkit-mask: radial-gradient(circle, transparent 66%, black 68%);
               mask: radial-gradient(circle, transparent 66%, black 68%);
       opacity: 0.9;
@@ -516,37 +579,39 @@
     }
 
     @media (max-width: 820px) {
-      #playerHud {
-        width: calc(100vw - 120px);
-      }
-
-      #enemyHud {
-        display: none;
-      }
-
       #reactionMiniLog {
-        top: 110px;
+        top: 74px;
         width: min(220px, 44vw);
       }
     }
 
     @media (max-width: 560px) {
-      #playerHud {
-        width: calc(100vw - 20px);
+      #joystickArea {
+        width: 148px;
+        height: 148px;
       }
 
-      #joystickArea {
-        left: 4px;
-        bottom: 92px;
-        transform: scale(0.92);
-        transform-origin: left bottom;
+      #joystickKnob {
+        width: 58px;
+        height: 58px;
+        left: 45px;
+        top: 45px;
+      }
+
+      #joystickRing {
+        width: 84px;
+        height: 84px;
       }
 
       #actionPad {
         right: 4px;
-        bottom: 86px;
+        bottom: 88px;
         transform: scale(0.92);
         transform-origin: right bottom;
+      }
+
+      #bottomStatus {
+        bottom: 92px;
       }
 
       #partySwitchBar {
@@ -571,25 +636,28 @@
     <canvas id="game"></canvas>
 
     <div id="topHud">
-      <div id="playerHud" class="hudCard">
+      <div id="leftInfo" class="hudCard">
         <div class="hudTitle">2D元素アクション</div>
+        <div style="font-size:12px; line-height:1.65; color:#dce6ff;">
+          左画面タッチでその位置にスティック出現<br>
+          攻撃長押しで重撃 / スキルはCT表示 / 爆発はエネルギー円表示
+        </div>
+      </div>
+    </div>
 
+    <div id="reactionMiniLog"></div>
+
+    <div id="bottomStatus" class="hudCard">
+      <div class="statusGroup">
         <div class="barBox">
           <div class="labelRow">
-            <span>操作キャラHP</span>
+            <span>HP</span>
             <span id="playerHpText">0 / 0</span>
           </div>
           <div class="bar"><div id="playerHpFill" class="fill hp"></div></div>
         </div>
-
-        <div class="barBox">
-          <div class="labelRow">
-            <span>元素エネルギー</span>
-            <span id="playerEnergyText">0 / 100</span>
-          </div>
-          <div class="bar"><div id="playerEnergyFill" class="fill energy"></div></div>
-        </div>
-
+      </div>
+      <div class="statusGroup">
         <div class="barBox">
           <div class="labelRow">
             <span>スタミナ</span>
@@ -597,53 +665,45 @@
           </div>
           <div class="bar"><div id="playerStaminaFill" class="fill stamina"></div></div>
         </div>
-
-        <div class="barBox" style="margin-bottom:0;">
-          <div class="labelRow">
-            <span>ボスHP</span>
-            <span id="enemyHpText">0 / 0</span>
-          </div>
-          <div class="bar"><div id="enemyHpFill" class="fill enemyHp"></div></div>
-        </div>
-      </div>
-
-      <div id="enemyHud" class="hudCard">
-        <div class="hudTitle">ボス情報</div>
-        <div style="font-size:13px; line-height:1.7; color:#dce6ff;">
-          深淵の模造王<br>
-          元素反応を重ねると大ダメージ<br>
-          爆発ボタンが光ったら撃ちどころ
-        </div>
       </div>
     </div>
 
-    <div id="reactionMiniLog"></div>
-
     <div id="mobileControls">
+      <div id="leftTouchArea"></div>
+
       <div id="joystickArea">
         <div id="joystickBase">
           <div id="joystickRing"></div>
         </div>
         <div id="joystickKnob"></div>
-        <div id="joystickHint">ドラッグで移動 / 上でジャンプ</div>
       </div>
 
       <div id="actionPad">
         <button id="btnAttack" class="touchBtn" aria-label="攻撃">
-          <div>
+          <div id="attackChargeRing"></div>
+          <div id="attackChargeGlow"></div>
+          <div class="btnLabel">
             攻撃
             <span class="sub">長押し: 重撃</span>
           </div>
-          <div id="btnAttackCharge"></div>
         </button>
+
         <button id="btnSkill" class="touchBtn" aria-label="スキル">
-          <div>スキル</div>
+          <div id="skillRadial" class="radialFill"></div>
+          <div class="radialInnerDim"></div>
+          <div id="skillCooldownText" class="cooldownText" style="display:none;">0</div>
+          <div class="btnLabel">スキル</div>
         </button>
+
         <button id="btnBurst" class="touchBtn" aria-label="爆発">
-          <div>爆発</div>
+          <div id="burstRadial" class="radialFill"></div>
+          <div class="radialInnerDim"></div>
+          <div id="burstEnergyText" class="cooldownText" style="font-size:16px;">0%</div>
+          <div class="btnLabel" style="margin-top:18px;">爆発</div>
         </button>
+
         <button id="btnDodge" class="touchBtn" aria-label="回避">
-          <div>回避</div>
+          <div class="btnLabel">回避</div>
         </button>
       </div>
     </div>
@@ -660,7 +720,7 @@
       <p>右上の「再挑戦」でリスタート</p>
     </div>
 
-    <div id="footerMini">左はスティック、右は戦闘。スマホで戦う形に進化。</div>
+    <div id="footerMini">広いステージ化。逃げても追ってくる。</div>
   </div>
 
   <script>
@@ -677,9 +737,11 @@
     window.addEventListener("resize", resizeCanvas);
     resizeCanvas();
 
-    const W = () => window.innerWidth;
-    const H = () => window.innerHeight;
-    const groundY = () => H() - 120;
+    const VIEW_W = () => window.innerWidth;
+    const VIEW_H = () => window.innerHeight;
+    const groundY = () => VIEW_H() - 120;
+    const WORLD_WIDTH = 3000;
+    let cameraX = 0;
 
     const GRAVITY = 0.72;
     const FRICTION = 0.82;
@@ -701,25 +763,30 @@
       );
     }
 
+    function sx(x) {
+      return x - cameraX;
+    }
+
     // =========================================================
     // UI refs
     // =========================================================
     const playerHpFill = document.getElementById("playerHpFill");
     const playerHpText = document.getElementById("playerHpText");
-    const playerEnergyFill = document.getElementById("playerEnergyFill");
-    const playerEnergyText = document.getElementById("playerEnergyText");
     const playerStaminaFill = document.getElementById("playerStaminaFill");
     const playerStaminaText = document.getElementById("playerStaminaText");
-    const enemyHpFill = document.getElementById("enemyHpFill");
-    const enemyHpText = document.getElementById("enemyHpText");
 
     const reactionMiniLog = document.getElementById("reactionMiniLog");
     const bigMessage = document.getElementById("bigMessage");
     const bigMessageTitle = document.getElementById("bigMessageTitle");
     const bigMessageBody = document.getElementById("bigMessageBody");
     const btnBurst = document.getElementById("btnBurst");
-    const btnAttackCharge = document.getElementById("btnAttackCharge");
+    const burstRadial = document.getElementById("burstRadial");
+    const burstEnergyText = document.getElementById("burstEnergyText");
+    const skillRadial = document.getElementById("skillRadial");
+    const skillCooldownText = document.getElementById("skillCooldownText");
     const partySwitchBar = document.getElementById("partySwitchBar");
+    const attackChargeRing = document.getElementById("attackChargeRing");
+    const attackChargeGlow = document.getElementById("attackChargeGlow");
 
     function addLog(text) {
       const div = document.createElement("div");
@@ -764,31 +831,64 @@
       return false;
     }
 
-    // -------- バーチャルスティック --------
+    // -------- 可動式バーチャルスティック --------
+    const leftTouchArea = document.getElementById("leftTouchArea");
     const joystickArea = document.getElementById("joystickArea");
     const joystickKnob = document.getElementById("joystickKnob");
 
     let joystickActive = false;
     let joystickPointerId = null;
-    let joystickCenter = { x: 100, y: 100 };
-    let joystickRadius = 54;
+    let joystickCenter = { x: 0, y: 0 };
+    let joystickRadius = 42;
     let jumpTriggeredByStick = false;
+    const joystickHome = { left: 10, bottom: 96 };
 
-    function updateJoystickLayout() {
+    function updateJoystickRadius() {
+      const rect = joystickArea.getBoundingClientRect();
+      joystickRadius = Math.min(rect.width, rect.height) * 0.26;
+    }
+
+    function setJoystickToHome() {
+      joystickArea.style.left = joystickHome.left + "px";
+      joystickArea.style.bottom = joystickHome.bottom + "px";
+      updateJoystickRadius();
       const rect = joystickArea.getBoundingClientRect();
       joystickCenter = { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
-      joystickRadius = Math.min(rect.width, rect.height) * 0.27;
+      joystickKnob.style.transform = `translate(0px,0px)`;
     }
-    window.addEventListener("resize", updateJoystickLayout);
-    updateJoystickLayout();
+
+    window.addEventListener("resize", setJoystickToHome);
+    setJoystickToHome();
+
+    function showJoystickAt(clientX, clientY) {
+      const size = joystickArea.offsetWidth || 160;
+      const leftLimit = 0;
+      const rightLimit = VIEW_W() * 0.46 - size;
+      const topLimit = 70;
+      const bottomLimit = VIEW_H() - 150 - size;
+
+      const left = clamp(clientX - size / 2, leftLimit, rightLimit);
+      const top = clamp(clientY - size / 2, topLimit, bottomLimit);
+
+      joystickArea.style.left = left + "px";
+      joystickArea.style.bottom = "auto";
+      joystickArea.style.top = top + "px";
+
+      const rect = joystickArea.getBoundingClientRect();
+      joystickCenter = { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
+      updateJoystickRadius();
+    }
 
     function resetJoystick() {
       joystickActive = false;
       joystickPointerId = null;
       input.moveX = 0;
       jumpTriggeredByStick = false;
-      joystickKnob.style.transform = `translate(0px, 0px)`;
-      joystickArea.releasePointerCapture?.(joystickPointerId);
+      joystickKnob.style.transform = `translate(0px,0px)`;
+      joystickArea.style.top = "auto";
+      joystickArea.style.bottom = joystickHome.bottom + "px";
+      joystickArea.style.left = joystickHome.left + "px";
+      setTimeout(() => setJoystickToHome(), 10);
     }
 
     function handleJoystickMove(clientX, clientY) {
@@ -816,16 +916,16 @@
       }
     }
 
-    joystickArea.addEventListener("pointerdown", (e) => {
+    leftTouchArea.addEventListener("pointerdown", (e) => {
       e.preventDefault();
-      updateJoystickLayout();
       joystickActive = true;
       joystickPointerId = e.pointerId;
-      joystickArea.setPointerCapture(e.pointerId);
+      leftTouchArea.setPointerCapture(e.pointerId);
+      showJoystickAt(e.clientX, e.clientY);
       handleJoystickMove(e.clientX, e.clientY);
     });
 
-    joystickArea.addEventListener("pointermove", (e) => {
+    leftTouchArea.addEventListener("pointermove", (e) => {
       if (!joystickActive || e.pointerId !== joystickPointerId) return;
       e.preventDefault();
       handleJoystickMove(e.clientX, e.clientY);
@@ -836,11 +936,12 @@
       if (e.pointerId !== undefined && e.pointerId !== joystickPointerId) return;
       resetJoystick();
     };
-    joystickArea.addEventListener("pointerup", endJoystick);
-    joystickArea.addEventListener("pointercancel", endJoystick);
-    joystickArea.addEventListener("lostpointercapture", endJoystick);
 
-    // -------- 攻撃ボタン：短押し/長押し --------
+    leftTouchArea.addEventListener("pointerup", endJoystick);
+    leftTouchArea.addEventListener("pointercancel", endJoystick);
+    leftTouchArea.addEventListener("lostpointercapture", endJoystick);
+
+    // -------- 攻撃ボタン --------
     const btnAttack = document.getElementById("btnAttack");
     let attackPressing = false;
     let attackPointerId = null;
@@ -853,18 +954,18 @@
       attackPointerId = e.pointerId;
       attackPressStart = performance.now();
       btnAttack.classList.add("active");
-      btnAttackCharge.style.setProperty("--charge", "0%");
       btnAttack.setPointerCapture(e.pointerId);
     });
 
     function releaseAttack(e) {
       if (!attackPressing) return;
       if (e.pointerId !== undefined && e.pointerId !== attackPointerId) return;
-
       const held = performance.now() - attackPressStart;
       attackPressing = false;
       btnAttack.classList.remove("active");
-      btnAttackCharge.style.setProperty("--charge", "0%");
+      attackChargeRing.style.background = `conic-gradient(from -90deg, rgba(255,235,145,0) 0deg, rgba(255,235,145,0) 360deg)`;
+      attackChargeGlow.style.opacity = "0";
+
       if (held >= CHARGE_THRESHOLD) {
         input.chargedAttackQueued = true;
       } else {
@@ -899,19 +1000,19 @@
     simpleTapButton("btnDodge", () => input.dodgeQueued = true);
     simpleTapButton("btnRestart", () => input.restartQueued = true);
 
-    // キーボードはデバッグ用に残す
+    // デバッグキーボード
     window.addEventListener("keydown", (e) => {
       const k = e.key.toLowerCase();
       if (k === "a") input.moveX = -1;
       if (k === "d") input.moveX = 1;
       if (k === "w") input.jumpQueued = true;
       if (k === "j") input.attackQueued = true;
+      if (k === "u") input.chargedAttackQueued = true;
       if (k === "k") input.skillQueued = true;
       if (k === "l") input.burstQueued = true;
       if (k === "q") input.switchTo = "next";
       if (k === "r") input.restartQueued = true;
       if (k === "shift") input.dodgeQueued = true;
-      if (k === "u") input.chargedAttackQueued = true;
     });
     window.addEventListener("keyup", (e) => {
       const k = e.key.toLowerCase();
@@ -924,66 +1025,10 @@
     // Party
     // =========================================================
     const partyTemplates = [
-      {
-        name: "ヒノ",
-        short: "ヒノ",
-        element: "pyro",
-        maxHp: 240,
-        attack: 18,
-        chargedAttack: 36,
-        skillCdMax: 240,
-        burstCost: 100,
-        speed: 5.1,
-        color: "#ff7a3d",
-        secondary: "#ffc49d",
-        skillName: "炎刃斬り",
-        burstName: "焔陣解放"
-      },
-      {
-        name: "ミナ",
-        short: "ミナ",
-        element: "hydro",
-        maxHp: 250,
-        attack: 16,
-        chargedAttack: 33,
-        skillCdMax: 220,
-        burstCost: 100,
-        speed: 4.9,
-        color: "#4ca8ff",
-        secondary: "#b8e2ff",
-        skillName: "水輪弾",
-        burstName: "潮流結界"
-      },
-      {
-        name: "ライ",
-        short: "ライ",
-        element: "electro",
-        maxHp: 230,
-        attack: 17,
-        chargedAttack: 35,
-        skillCdMax: 210,
-        burstCost: 100,
-        speed: 5.2,
-        color: "#b07cff",
-        secondary: "#ead9ff",
-        skillName: "雷迅突",
-        burstName: "紫電放域"
-      },
-      {
-        name: "ユキ",
-        short: "ユキ",
-        element: "cryo",
-        maxHp: 245,
-        attack: 15,
-        chargedAttack: 31,
-        skillCdMax: 230,
-        burstCost: 100,
-        speed: 4.8,
-        color: "#8de7ff",
-        secondary: "#ecfbff",
-        skillName: "氷結片",
-        burstName: "霜華結晶"
-      }
+      { name: "ヒノ", short: "ヒノ", element: "pyro", maxHp: 240, attack: 18, chargedAttack: 36, skillCdMax: 240, burstCost: 100, speed: 5.1, color: "#ff7a3d", secondary: "#ffc49d", skillName: "炎刃斬り", burstName: "焔陣解放" },
+      { name: "ミナ", short: "ミナ", element: "hydro", maxHp: 250, attack: 16, chargedAttack: 33, skillCdMax: 220, burstCost: 100, speed: 4.9, color: "#4ca8ff", secondary: "#b8e2ff", skillName: "水輪弾", burstName: "潮流結界" },
+      { name: "ライ", short: "ライ", element: "electro", maxHp: 230, attack: 17, chargedAttack: 35, skillCdMax: 210, burstCost: 100, speed: 5.2, color: "#b07cff", secondary: "#ead9ff", skillName: "雷迅突", burstName: "紫電放域" },
+      { name: "ユキ", short: "ユキ", element: "cryo", maxHp: 245, attack: 15, chargedAttack: 31, skillCdMax: 230, burstCost: 100, speed: 4.8, color: "#8de7ff", secondary: "#ecfbff", skillName: "氷結片", burstName: "霜華結晶" }
     ];
 
     function createPartyMember(template, index) {
@@ -1030,12 +1075,22 @@
       return party[activeIndex];
     }
 
+    function getLeftPriorityAliveIndex(fromIndex) {
+      for (let i = fromIndex - 1; i >= 0; i--) {
+        if (party[i] && party[i].hp > 0) return i;
+      }
+      for (let i = 0; i < party.length; i++) {
+        if (i !== fromIndex && party[i] && party[i].hp > 0) return i;
+      }
+      return -1;
+    }
+
     // =========================================================
     // Enemy
     // =========================================================
     function createEnemy() {
       return {
-        x: W() - 260,
+        x: 2200,
         y: groundY() - 120,
         w: 86,
         h: 120,
@@ -1135,7 +1190,6 @@
         addLog(`${elementName(element)}元素付着`);
         return { reacted: false };
       }
-
       if (target.elementAura === element) {
         target.auraTimer = Math.max(target.auraTimer, duration);
         return { reacted: false };
@@ -1185,7 +1239,6 @@
       }
 
       if (enemy.defShredTimer > 0) finalDamage *= 1.18;
-
       finalDamage = Math.round(finalDamage);
       enemy.hp = Math.max(0, enemy.hp - finalDamage);
       enemy.hurtFlash = 8;
@@ -1213,7 +1266,6 @@
     function createHitbox(owner, x, y, w, h, damage, duration, element = null, knock = 0, color = null) {
       hitboxes.push({
         owner, x, y, w, h, damage, duration,
-        maxDuration: duration,
         element, knock,
         hitSet: new Set(),
         color: color || (element ? elementColor(element) : "#ffffff")
@@ -1222,7 +1274,6 @@
 
     function performNormalAttack(ch) {
       if (ch.attackTimer > 0 || ch.dodgeTimer > 0) return;
-
       ch.attackIndex = (ch.attackIndex % 3) + 1;
       ch.attackTimer = 20;
 
@@ -1251,7 +1302,6 @@
 
     function performChargedAttack(ch) {
       if (ch.attackTimer > 0 || ch.dodgeTimer > 0 || ch.stamina < 18) return;
-
       ch.attackTimer = 28;
       ch.stamina -= 18;
 
@@ -1338,34 +1388,18 @@
 
       if (ch.element === "pyro") {
         fields.push({
-          owner: "player",
-          type: "burstField",
-          x: enemy.x - 40,
-          y: groundY() - 100,
-          w: 180,
-          h: 100,
-          life: 180,
-          tick: 0,
-          damage: Math.round(ch.attack * 1.1),
-          element: "pyro",
-          color: "rgba(255,122,61,0.28)"
+          x: enemy.x - 40, y: groundY() - 100, w: 180, h: 100,
+          life: 180, tick: 0, damage: Math.round(ch.attack * 1.1),
+          element: "pyro", type: "burstField", color: "rgba(255,122,61,0.28)"
         });
         spawnParticle(enemy.x + enemy.w / 2, enemy.y + enemy.h / 2, "#ff7a3d", 70, 2.6, 5.2);
       }
 
       if (ch.element === "hydro") {
         fields.push({
-          owner: "player",
-          type: "burstField",
-          x: enemy.x - 50,
-          y: groundY() - 110,
-          w: 200,
-          h: 110,
-          life: 170,
-          tick: 0,
-          damage: Math.round(ch.attack * 0.95),
-          element: "hydro",
-          color: "rgba(76,168,255,0.26)"
+          x: enemy.x - 50, y: groundY() - 110, w: 200, h: 110,
+          life: 170, tick: 0, damage: Math.round(ch.attack * 0.95),
+          element: "hydro", type: "burstField", color: "rgba(76,168,255,0.26)"
         });
         spawnParticle(enemy.x + enemy.w / 2, enemy.y + 30, "#4ca8ff", 70, 2.8, 5.0);
       }
@@ -1374,28 +1408,20 @@
         for (let i = 0; i < 7; i++) {
           setTimeout(() => {
             if (enemy.hp <= 0) return;
-            const sx = enemy.x + rand(10, enemy.w - 10);
-            const sy = enemy.y + rand(0, enemy.h * 0.3);
+            const sxp = enemy.x + rand(10, enemy.w - 10);
+            const syp = enemy.y + rand(0, enemy.h * 0.3);
             createHitbox("player", enemy.x - 20, enemy.y - 10, enemy.w + 40, enemy.h + 20, Math.round(ch.attack * 1.0), 2, "electro", 0);
-            spawnParticle(sx, sy, "#b07cff", 30, 2.0, 5.5);
-            spawnDamageText(sx, sy - 18, "落雷", "#d8b8ff", 0.95);
+            spawnParticle(sxp, syp, "#b07cff", 30, 2.0, 5.5);
+            spawnDamageText(sxp, syp - 18, "落雷", "#d8b8ff", 0.95);
           }, i * 110);
         }
       }
 
       if (ch.element === "cryo") {
         fields.push({
-          owner: "player",
-          type: "freezeStorm",
-          x: enemy.x - 30,
-          y: enemy.y - 20,
-          w: 170,
-          h: 150,
-          life: 180,
-          tick: 0,
-          damage: Math.round(ch.attack * 0.9),
-          element: "cryo",
-          color: "rgba(141,231,255,0.24)"
+          x: enemy.x - 30, y: enemy.y - 20, w: 170, h: 150,
+          life: 180, tick: 0, damage: Math.round(ch.attack * 0.9),
+          element: "cryo", type: "freezeStorm", color: "rgba(141,231,255,0.24)"
         });
         spawnParticle(enemy.x + enemy.w / 2, enemy.y + enemy.h / 2, "#8de7ff", 80, 2.4, 5.3);
       }
@@ -1412,7 +1438,10 @@
 
     function switchCharacterTo(index) {
       if (index === null || index === undefined) return;
-      if (index === "next") index = (activeIndex + 1) % party.length;
+      if (index === "next") {
+        const next = getLeftPriorityAliveIndex(activeIndex);
+        if (next >= 0) index = next;
+      }
       if (!party[index] || party[index].hp <= 0 || index === activeIndex) return;
 
       const before = activeChar();
@@ -1430,6 +1459,18 @@
       addLog(`キャラ切替：${after.name}`);
     }
 
+    function autoSwitchIfNeeded() {
+      const ch = activeChar();
+      if (ch && ch.hp > 0) return;
+      const next = getLeftPriorityAliveIndex(activeIndex);
+      if (next >= 0) {
+        activeIndex = next;
+        const now = activeChar();
+        now.switchInvuln = 24;
+        addLog(`戦闘不能 → ${now.name}へ自動切替`);
+      }
+    }
+
     // =========================================================
     // Reset
     // =========================================================
@@ -1442,7 +1483,9 @@
       hitboxes = [];
       projectiles = [];
       fields = [];
+      cameraX = 0;
       hideMessage();
+      setJoystickToHome();
       addLog("戦闘開始");
       renderPartySwitchBar();
     }
@@ -1452,8 +1495,7 @@
     // Update
     // =========================================================
     function updatePlayer(ch) {
-      if (ch.hp <= 0) return;
-
+      if (!ch || ch.hp <= 0) return;
       const moveSpeed = ch.speed;
 
       if (input.moveX < -0.12) {
@@ -1502,7 +1544,6 @@
       ch.vy += GRAVITY;
       ch.x += ch.vx;
       ch.y += ch.vy;
-
       ch.vx *= FRICTION;
 
       if (ch.y + ch.h >= groundY()) {
@@ -1513,7 +1554,7 @@
         ch.onGround = false;
       }
 
-      ch.x = clamp(ch.x, 20, W() - 20 - ch.w);
+      ch.x = clamp(ch.x, 20, WORLD_WIDTH - 20 - ch.w);
       ch.stamina += ch.dodgeTimer > 0 ? 0.12 : 0.32;
       ch.stamina = clamp(ch.stamina, 0, 100);
     }
@@ -1550,7 +1591,6 @@
         }
       } else {
         if (adx > 90) enemy.vx += enemy.facing * 0.22;
-
         if (adx < 88 && enemy.attackCooldown <= 0) enemy.attackWindup = 18;
 
         if (adx > 180 && enemy.projectileCd <= 0) {
@@ -1597,7 +1637,8 @@
       enemy.y += enemy.vy;
       enemy.vx *= 0.9;
 
-      enemy.x = clamp(enemy.x, 40, W() - 40 - enemy.w);
+      enemy.x = clamp(enemy.x, 40, WORLD_WIDTH - 40 - enemy.w);
+
       if (enemy.y + enemy.h >= groundY()) {
         enemy.y = groundY() - enemy.h;
         enemy.vy = 0;
@@ -1619,7 +1660,7 @@
 
         if (hb.owner === "enemy") {
           const ch = activeChar();
-          if (ch.hp > 0) {
+          if (ch && ch.hp > 0) {
             const chRect = { x: ch.x, y: ch.y, w: ch.w, h: ch.h };
             if (rectsHit(hb, chRect) && !hb.hitSet.has("player")) {
               hb.hitSet.add("player");
@@ -1669,7 +1710,7 @@
 
         if (p.owner === "enemy") {
           const ch = activeChar();
-          if (ch.hp > 0) {
+          if (ch && ch.hp > 0) {
             const hitPlayer = (
               p.x + p.r > ch.x &&
               p.x - p.r < ch.x + ch.w &&
@@ -1686,8 +1727,8 @@
 
         if (
           p.life <= 0 ||
-          p.x < -100 || p.x > W() + 100 ||
-          p.y < -100 || p.y > H() + 100
+          p.x < -100 || p.x > WORLD_WIDTH + 100 ||
+          p.y < -100 || p.y > VIEW_H() + 100
         ) remove = true;
 
         if (remove) projectiles.splice(i, 1);
@@ -1748,6 +1789,7 @@
 
     function updatePartySync() {
       const ch = activeChar();
+      if (!ch) return;
       for (let i = 0; i < party.length; i++) {
         if (i === activeIndex) continue;
         party[i].x = ch.x;
@@ -1756,33 +1798,65 @@
       }
     }
 
+    function updateCamera() {
+      const ch = activeChar();
+      if (!ch) return;
+      const target = ch.x + ch.w / 2 - VIEW_W() * 0.42;
+      cameraX += (target - cameraX) * 0.10;
+      cameraX = clamp(cameraX, 0, WORLD_WIDTH - VIEW_W());
+    }
+
     function checkGameState() {
       const alive = party.some(c => c.hp > 0);
       if (!alive && !bigMessage.classList.contains("show")) {
-        showMessage("DEFEAT", "パーティが全滅した。元素反応と回避のタイミングを合わせよう。");
+        showMessage("DEFEAT", "パーティが全滅した。広い地形を使って距離を取りつつ反応を重ねよう。");
       }
 
       if (enemy.hp <= 0 && !bigMessage.classList.contains("show")) {
-        showMessage("VICTORY", "撃破！ スマホ戦闘UIの土台としてかなり強くなった。");
+        showMessage("VICTORY", "撃破！ 広いステージで立ち回れる版になった。");
       }
     }
 
     function updateChargeVisual() {
-      if (!attackPressing) {
-        btnAttackCharge.style.setProperty("--charge", "0%");
-        return;
-      }
+      if (!attackPressing) return;
       const held = performance.now() - attackPressStart;
       const ratio = clamp(held / CHARGE_THRESHOLD, 0, 1);
-      btnAttackCharge.style.setProperty("--charge", `${ratio * 100}%`);
+      const deg = ratio * 360;
+      attackChargeRing.style.background =
+        `conic-gradient(from -90deg, rgba(255,235,145,0.92) 0deg, rgba(255,235,145,0.92) ${deg}deg, rgba(255,255,255,0.08) ${deg}deg, rgba(255,255,255,0.08) 360deg)`;
+      attackChargeGlow.style.opacity = String(0.15 + ratio * 0.85);
     }
 
-    function updateBurstReadyVisual() {
+    function updateBurstVisual() {
       const ch = activeChar();
-      if (ch.energy >= ch.burstCost) {
+      const ratio = clamp(ch.energy / ch.burstCost, 0, 1);
+      const deg = ratio * 360;
+      burstRadial.style.background =
+        `conic-gradient(from -90deg, rgba(255,224,113,0.98) 0deg, rgba(255,224,113,0.98) ${deg}deg, rgba(255,255,255,0.12) ${deg}deg, rgba(255,255,255,0.12) 360deg)`;
+      burstEnergyText.textContent = `${Math.floor(ratio * 100)}%`;
+
+      if (ratio >= 1) {
         btnBurst.classList.add("ready");
+        btnBurst.style.filter = "brightness(1.18)";
       } else {
         btnBurst.classList.remove("ready");
+        btnBurst.style.filter = `brightness(${0.62 + ratio * 0.38})`;
+      }
+    }
+
+    function updateSkillVisual() {
+      const ch = activeChar();
+      const ratio = 1 - clamp(ch.skillCd / ch.skillCdMax, 0, 1);
+      const deg = ratio * 360;
+      skillRadial.style.background =
+        `conic-gradient(from -90deg, rgba(122,175,255,0.98) 0deg, rgba(122,175,255,0.98) ${deg}deg, rgba(255,255,255,0.10) ${deg}deg, rgba(255,255,255,0.10) 360deg)`;
+
+      if (ch.skillCd > 0) {
+        const sec = Math.ceil(ch.skillCd / 60);
+        skillCooldownText.style.display = "flex";
+        skillCooldownText.textContent = sec;
+      } else {
+        skillCooldownText.style.display = "none";
       }
     }
 
@@ -1790,56 +1864,77 @@
     // Draw
     // =========================================================
     function drawBackground() {
-      const h = H();
-      const w = W();
+      const h = VIEW_H();
+      const g = groundY();
 
-      const grd = ctx.createLinearGradient(0, 0, 0, h);
-      grd.addColorStop(0, "#1c2750");
-      grd.addColorStop(0.45, "#101a37");
-      grd.addColorStop(1, "#0a1020");
-      ctx.fillStyle = grd;
-      ctx.fillRect(0, 0, w, h);
+      const sky = ctx.createLinearGradient(0, 0, 0, h);
+      sky.addColorStop(0, "#1c2750");
+      sky.addColorStop(0.45, "#101a37");
+      sky.addColorStop(1, "#0a1020");
+      ctx.fillStyle = sky;
+      ctx.fillRect(0, 0, VIEW_W(), h);
 
-      for (let i = 0; i < 5; i++) {
-        ctx.fillStyle = `rgba(255,255,255,${0.02 + i * 0.008})`;
+      // 遠景山脈（ワールド幅）
+      for (let layer = 0; layer < 4; layer++) {
+        const parallax = 0.18 + layer * 0.10;
+        const baseY = h - 300 + layer * 28;
+        ctx.fillStyle = `rgba(255,255,255,${0.018 + layer * 0.01})`;
         ctx.beginPath();
-        const baseY = h - 260 + i * 18;
-        ctx.moveTo(0, h);
-        for (let x = 0; x <= w; x += 80) {
-          ctx.lineTo(x, baseY + Math.sin((x * 0.01) + i) * (20 + i * 8));
+        ctx.moveTo(-100, h);
+        for (let x = -200; x <= WORLD_WIDTH + 200; x += 120) {
+          const px = x - cameraX * parallax;
+          const py = baseY + Math.sin((x * 0.008) + layer * 2.1) * (20 + layer * 9);
+          ctx.lineTo(px, py);
         }
-        ctx.lineTo(w, h);
+        ctx.lineTo(VIEW_W() + 200, h);
         ctx.closePath();
         ctx.fill();
       }
 
-      const g = groundY();
+      // 地面
       const groundGrd = ctx.createLinearGradient(0, g, 0, h);
       groundGrd.addColorStop(0, "#20274c");
       groundGrd.addColorStop(1, "#11162c");
       ctx.fillStyle = groundGrd;
-      ctx.fillRect(0, g, w, h - g);
+      ctx.fillRect(0, g, VIEW_W(), h - g);
 
       ctx.strokeStyle = "rgba(190,220,255,0.18)";
       ctx.lineWidth = 2;
       ctx.beginPath();
       ctx.moveTo(0, g);
-      ctx.lineTo(w, g);
+      ctx.lineTo(VIEW_W(), g);
       ctx.stroke();
 
-      for (let i = 0; i < 4; i++) {
-        const cx = 150 + i * 260;
-        const cy = g + 38;
+      // 地面ルーン/装飾
+      for (let i = 0; i < 14; i++) {
+        const wx = 160 + i * 220;
+        const px = sx(wx);
+        if (px < -100 || px > VIEW_W() + 100) continue;
         ctx.strokeStyle = "rgba(130,170,255,0.06)";
         ctx.lineWidth = 2;
         ctx.beginPath();
-        ctx.arc(cx, cy, 30 + (i % 2) * 8, 0, Math.PI * 2);
+        ctx.arc(px, g + 38, 26 + (i % 2) * 8, 0, Math.PI * 2);
         ctx.stroke();
+      }
+
+      // 柱っぽい背景物
+      for (let i = 0; i < 10; i++) {
+        const wx = 240 + i * 300;
+        const px = sx(wx);
+        if (px < -80 || px > VIEW_W() + 80) continue;
+        ctx.fillStyle = "rgba(255,255,255,0.05)";
+        ctx.fillRect(px, g - 120, 14, 120);
+        ctx.fillStyle = "rgba(255,255,255,0.03)";
+        ctx.fillRect(px - 10, g - 10, 34, 10);
       }
     }
 
     function drawCharacter(ch, isActive) {
       if (ch.hp <= 0) return;
+      const px = sx(ch.x);
+
+      if (px < -80 || px > VIEW_W() + 80) return;
+
       ctx.save();
 
       if (ch.invuln > 0 || ch.switchInvuln > 0) {
@@ -1848,18 +1943,18 @@
 
       ctx.fillStyle = "rgba(0,0,0,0.25)";
       ctx.beginPath();
-      ctx.ellipse(ch.x + ch.w / 2, groundY() + 5, 20, 8, 0, 0, Math.PI * 2);
+      ctx.ellipse(px + ch.w / 2, groundY() + 5, 20, 8, 0, 0, Math.PI * 2);
       ctx.fill();
 
       if (isActive) {
         ctx.strokeStyle = ch.color;
         ctx.lineWidth = 2;
         ctx.beginPath();
-        ctx.arc(ch.x + ch.w / 2, ch.y + ch.h / 2, 34 + Math.sin(Date.now() * 0.01) * 2, 0, Math.PI * 2);
+        ctx.arc(px + ch.w / 2, ch.y + ch.h / 2, 34 + Math.sin(Date.now() * 0.01) * 2, 0, Math.PI * 2);
         ctx.stroke();
       }
 
-      ctx.translate(ch.x + ch.w / 2, ch.y + ch.h / 2);
+      ctx.translate(px + ch.w / 2, ch.y + ch.h / 2);
       ctx.scale(ch.facing, 1);
 
       ctx.fillStyle = ch.hitFlash > 0 ? "#fff4f4" : ch.color;
@@ -1905,33 +2000,29 @@
       }
 
       ctx.restore();
-
-      if (isActive) {
-        ctx.fillStyle = "#f4f7ff";
-        ctx.font = "bold 14px sans-serif";
-        ctx.textAlign = "center";
-        ctx.fillText(ch.name, ch.x + ch.w / 2, ch.y - 12);
-      }
     }
 
     function drawEnemy() {
       if (enemy.hp <= 0) return;
+      const px = sx(enemy.x);
+      if (px < -120 || px > VIEW_W() + 120) return;
+
       ctx.save();
 
       ctx.fillStyle = "rgba(0,0,0,0.28)";
       ctx.beginPath();
-      ctx.ellipse(enemy.x + enemy.w / 2, groundY() + 8, 34, 12, 0, 0, Math.PI * 2);
+      ctx.ellipse(px + enemy.w / 2, groundY() + 8, 34, 12, 0, 0, Math.PI * 2);
       ctx.fill();
 
       if (enemy.elementAura) {
         ctx.strokeStyle = elementColor(enemy.elementAura);
         ctx.lineWidth = 3;
         ctx.beginPath();
-        ctx.arc(enemy.x + enemy.w / 2, enemy.y + 40, 50 + Math.sin(Date.now() * 0.009) * 3, 0, Math.PI * 2);
+        ctx.arc(px + enemy.w / 2, enemy.y + 40, 50 + Math.sin(Date.now() * 0.009) * 3, 0, Math.PI * 2);
         ctx.stroke();
       }
 
-      ctx.translate(enemy.x + enemy.w / 2, enemy.y + enemy.h / 2);
+      ctx.translate(px + enemy.w / 2, enemy.y + enemy.h / 2);
       ctx.scale(enemy.facing, 1);
 
       ctx.fillStyle = enemy.hurtFlash > 0 ? "#fff2f2" : "#7c2038";
@@ -1965,31 +2056,52 @@
 
       ctx.restore();
 
+      // 頭上HPバー
+      const barW = 130;
+      const barH = 10;
+      const bx = px + enemy.w / 2 - barW / 2;
+      const by = enemy.y - 22;
+
+      ctx.fillStyle = "rgba(10,16,30,0.72)";
+      ctx.fillRect(bx - 2, by - 2, barW + 4, barH + 22);
+      ctx.fillStyle = "rgba(255,255,255,0.08)";
+      ctx.fillRect(bx, by + 12, barW, barH);
+
+      ctx.fillStyle = "#ff7d7d";
+      ctx.fillRect(bx, by + 12, barW * (enemy.hp / enemy.maxHp), barH);
+
+      ctx.strokeStyle = "rgba(255,255,255,0.12)";
+      ctx.strokeRect(bx, by + 12, barW, barH);
+
       ctx.fillStyle = "#ffe6e6";
-      ctx.font = "bold 15px sans-serif";
+      ctx.font = "bold 13px sans-serif";
       ctx.textAlign = "center";
-      ctx.fillText("深淵の模造王", enemy.x + enemy.w / 2, enemy.y - 12);
+      ctx.fillText("深淵の模造王", px + enemy.w / 2, by + 8);
     }
 
     function drawHitboxes() {
       for (const hb of hitboxes) {
+        const px = sx(hb.x);
+        if (px + hb.w < -60 || px > VIEW_W() + 60) continue;
         ctx.save();
         ctx.globalAlpha = 0.10;
         ctx.fillStyle = hb.color;
-        ctx.fillRect(hb.x, hb.y, hb.w, hb.h);
+        ctx.fillRect(px, hb.y, hb.w, hb.h);
         ctx.restore();
       }
     }
 
     function drawProjectiles() {
       for (const p of projectiles) {
+        const px = sx(p.x);
+        if (px + p.r < -40 || px - p.r > VIEW_W() + 40) continue;
         ctx.save();
-        const grd = ctx.createRadialGradient(p.x, p.y, 1, p.x, p.y, p.r);
+        const grd = ctx.createRadialGradient(px, p.y, 1, px, p.y, p.r);
         grd.addColorStop(0, "#ffffff");
         grd.addColorStop(1, p.color);
         ctx.fillStyle = grd;
         ctx.beginPath();
-        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+        ctx.arc(px, p.y, p.r, 0, Math.PI * 2);
         ctx.fill();
         ctx.restore();
       }
@@ -1997,24 +2109,28 @@
 
     function drawFields() {
       for (const f of fields) {
+        const px = sx(f.x);
+        if (px + f.w < -80 || px > VIEW_W() + 80) continue;
         ctx.save();
         ctx.fillStyle = f.color;
-        ctx.fillRect(f.x, f.y, f.w, f.h);
+        ctx.fillRect(px, f.y, f.w, f.h);
         ctx.strokeStyle = elementColor(f.element);
         ctx.lineWidth = 2;
-        ctx.strokeRect(f.x, f.y, f.w, f.h);
+        ctx.strokeRect(px, f.y, f.w, f.h);
         ctx.restore();
       }
     }
 
     function drawParticles() {
       for (const p of particles) {
+        const px = sx(p.x);
+        if (px < -20 || px > VIEW_W() + 20) continue;
         const alpha = p.life / p.maxLife;
         ctx.save();
         ctx.globalAlpha = alpha;
         ctx.fillStyle = p.color;
         ctx.beginPath();
-        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+        ctx.arc(px, p.y, p.size, 0, Math.PI * 2);
         ctx.fill();
         ctx.restore();
       }
@@ -2022,19 +2138,21 @@
 
     function drawDamageTexts() {
       for (const d of damageTexts) {
+        const px = sx(d.x);
+        if (px < -80 || px > VIEW_W() + 80) continue;
         const alpha = d.life / d.maxLife;
         ctx.save();
         ctx.globalAlpha = alpha;
         ctx.fillStyle = d.color;
         ctx.font = `bold ${Math.floor(16 * d.scale + 10)}px sans-serif`;
         ctx.textAlign = "center";
-        ctx.fillText(d.text, d.x, d.y);
+        ctx.fillText(d.text, px, d.y);
         ctx.restore();
       }
     }
 
     // =========================================================
-    // UI updates
+    // HUD updates
     // =========================================================
     function renderPartySwitchBar() {
       partySwitchBar.innerHTML = "";
@@ -2063,30 +2181,26 @@
 
     function updateHUD() {
       const ch = activeChar();
+      if (!ch) return;
 
       playerHpFill.style.width = ((ch.hp / ch.maxHp) * 100) + "%";
       playerHpText.textContent = `${Math.ceil(ch.hp)} / ${ch.maxHp}`;
 
-      playerEnergyFill.style.width = ch.energy + "%";
-      playerEnergyText.textContent = `${Math.floor(ch.energy)} / 100`;
-
       playerStaminaFill.style.width = ch.stamina + "%";
       playerStaminaText.textContent = `${Math.floor(ch.stamina)} / 100`;
 
-      enemyHpFill.style.width = ((enemy.hp / enemy.maxHp) * 100) + "%";
-      enemyHpText.textContent = `${Math.max(0, Math.ceil(enemy.hp))} / ${enemy.maxHp}`;
-
       renderPartySwitchBar();
-      updateBurstReadyVisual();
-      updateChargeVisual();
+      updateBurstVisual();
+      updateSkillVisual();
     }
 
     // =========================================================
-    // Loop
+    // Main loop
     // =========================================================
     function loop() {
-      ctx.clearRect(0, 0, W(), H());
+      ctx.clearRect(0, 0, VIEW_W(), VIEW_H());
 
+      autoSwitchIfNeeded();
       const ch = activeChar();
 
       if (!bigMessage.classList.contains("show")) {
@@ -2099,16 +2213,20 @@
           updateParticles();
           updateDamageTexts();
           updatePartySync();
+          updateCamera();
+          updateChargeVisual();
           checkGameState();
         } else {
           updateParticles();
           updateDamageTexts();
+          updateCamera();
           if (consumeInput("restartQueued")) resetGame();
           checkGameState();
         }
       } else {
         updateParticles();
         updateDamageTexts();
+        updateCamera();
         if (consumeInput("restartQueued")) resetGame();
       }
 
@@ -2129,10 +2247,9 @@
 
     loop();
 
-    addLog("進化版UIで戦闘開始");
-    addLog("左スティックで移動、上入力でジャンプ");
-    addLog("攻撃長押しで重撃");
-    addLog("爆発が光ったら撃ちどき");
+    addLog("広いステージ版で戦闘開始");
+    addLog("左画面タッチ位置にスティック出現");
+    addLog("スキルCTと爆発ゲージをボタン表示");
   </script>
 </body>
 </html>
