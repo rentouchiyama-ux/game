@@ -2152,18 +2152,23 @@
         const scaleX = ch.facing === 1 ? -1 : 1;
         ctx.scale(scaleX, 1);
 
-        if (!img || !img.complete || img.naturalWidth <= 0) {
-          ctx.restore();
-          return;
+        if (img && img.complete && img.naturalWidth > 0) {
+          const isAttackFrame = frame === 6;
+          const drawH = Math.round(ch.h * (isAttackFrame ? 1.44 : 1.36));
+          const drawW = Math.round(ch.w * (isAttackFrame ? 2.5 : 2.35));
+          ctx.imageSmoothingEnabled = true;
+          if (ch.hitFlash > 0) {
+            ctx.globalAlpha *= 0.82;
+          }
+          ctx.drawImage(img, -drawW / 2, -drawH / 2 + 8, drawW, drawH);
+        } else {
+          ctx.fillStyle = ch.hitFlash > 0 ? "#fff4f4" : ch.color;
+          ctx.fillRect(-12, -10, 24, 34);
+          ctx.beginPath();
+          ctx.arc(0, -24, 14, 0, Math.PI * 2);
+          ctx.fillStyle = ch.hitFlash > 0 ? "#fff7f7" : ch.secondary;
+          ctx.fill();
         }
-        const isAttackFrame = frame === 6;
-        const drawH = Math.round(ch.h * (isAttackFrame ? 1.56 : 1.36));
-        const drawW = Math.round(ch.w * (isAttackFrame ? 2.7 : 2.35));
-        ctx.imageSmoothingEnabled = true;
-        if (ch.hitFlash > 0) {
-          ctx.globalAlpha *= 0.82;
-        }
-        ctx.drawImage(img, -drawW / 2, -drawH / 2 + 8, drawW, drawH);
       } else {
         ctx.scale(ch.facing, 1);
 
