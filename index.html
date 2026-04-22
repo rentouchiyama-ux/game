@@ -822,13 +822,13 @@
       const left = clientX - size / 2;
       const top = clientY - size / 2;
 
+      joystickArea.style.transition = "none";
       joystickArea.style.left = left + "px";
       joystickArea.style.top = top + "px";
       joystickArea.style.bottom = "auto";
 
-      const rect = joystickArea.getBoundingClientRect();
-      joystickCenter = { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
-      joystickRadius = rect.width * 0.23;
+      joystickCenter = { x: clientX, y: clientY };
+      joystickRadius = size * 0.23;
     }
 
     function resetJoystick() {
@@ -837,6 +837,7 @@
       input.moveX = 0;
       jumpTriggeredByStick = false;
       joystickKnob.style.transform = "translate(0px,0px)";
+      joystickArea.style.transition = "left 0.12s ease, bottom 0.12s ease, top 0.12s ease";
       setJoystickHome();
     }
 
