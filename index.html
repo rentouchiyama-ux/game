@@ -735,13 +735,13 @@
     }
 
     function getHinoFrame(ch) {
+      if ((ch.spriteActionTimer || 0) > 0 || ch.attackTimer > 0) return 6;
+
       if (!ch.onGround) {
-        if (ch.vy < -1.6) return 4;
-        if (ch.vy < 3.4) return 5;
+        if (ch.vy < -2.5) return 4;
+        if (ch.vy < 2.5) return 5;
         return 4;
       }
-
-      if ((ch.spriteActionTimer || 0) > 0 || ch.attackTimer > 0) return 6;
 
       if (Math.abs(ch.vx) > 0.5) {
         return Math.floor(Date.now() / 170) % 2 === 0 ? 2 : 3;
@@ -2062,13 +2062,13 @@
         ctx.scale(scaleX, 1);
 
         if (img && img.complete && img.naturalWidth > 0) {
-          const drawH = Math.round(ch.h * (4 / 3));
-          const drawW = Math.round(drawH * (img.naturalWidth / img.naturalHeight));
+          const drawW = 56;
+          const drawH = 84;
           ctx.imageSmoothingEnabled = true;
           if (ch.hitFlash > 0) {
             ctx.globalAlpha *= 0.82;
           }
-          ctx.drawImage(img, -drawW / 2, -drawH / 2 + 8, drawW, drawH);
+          ctx.drawImage(img, -drawW / 2, -drawH / 2 + 6, drawW, drawH);
         } else {
           ctx.fillStyle = ch.hitFlash > 0 ? "#fff4f4" : ch.color;
           ctx.fillRect(-12, -10, 24, 34);
