@@ -726,6 +726,29 @@
     const burstEnergyText = document.getElementById("burstEnergyText");
     const skillRadial = document.getElementById("skillRadial");
     const skillCooldownText = document.getElementById("skillCooldownText");
+
+    const hinoSprites = {};
+    for (let i = 1; i <= 6; i++) {
+      const img = new Image();
+      img.src = `hino_${i}.png`;
+      hinoSprites[i] = img;
+    }
+
+    function getHinoFrame(ch) {
+      if ((ch.spriteActionTimer || 0) > 0 || ch.attackTimer > 0) return 6;
+
+      if (!ch.onGround) {
+        if (ch.vy < -2.5) return 4;
+        if (ch.vy < 2.5) return 5;
+        return 4;
+      }
+
+      if (Math.abs(ch.vx) > 0.5) {
+        return Math.floor(Date.now() / 170) % 2 === 0 ? 2 : 3;
+      }
+
+      return 1;
+    }
     const partySwitchBar = document.getElementById("partySwitchBar");
     const attackChargeRing = document.getElementById("attackChargeRing");
     const attackChargeGlow = document.getElementById("attackChargeGlow");
@@ -970,7 +993,8 @@
         stamina: 100,
         hitFlash: 0,
         switchInvuln: 0,
-        attackStyle: ""
+        attackStyle: "",
+        spriteActionTimer: 0
       };
     }
 
@@ -1262,6 +1286,7 @@
 
       ch.attackIndex = (ch.attackIndex % 3) + 1;
       ch.attackTimer = 20;
+      ch.spriteActionTimer = Math.max(ch.spriteActionTimer || 0, 18);
 
       const baseX = ch.facing === 1 ? ch.x + ch.w : ch.x;
       const baseY = ch.y + 18;
@@ -1332,6 +1357,7 @@
     function performChargedAttack(ch) {
       if (ch.attackTimer > 0 || ch.dodgeTimer > 0 || ch.stamina < 18) return;
       ch.attackTimer = 28;
+      ch.spriteActionTimer = Math.max(ch.spriteActionTimer || 0, 22);
       ch.stamina -= 18;
 
       const hbW = 116;
@@ -1351,6 +1377,7 @@
     function castSkill(ch) {
       if (ch.skillCd > 0 || ch.dodgeTimer > 0) return;
       ch.skillCd = ch.skillCdMax;
+      ch.spriteActionTimer = Math.max(ch.spriteActionTimer || 0, 28);
 
       if (ch.element === "pyro") {
         const hbW = 96, hbH = 54;
@@ -1413,6 +1440,7 @@
     function castBurst(ch) {
       if (ch.energy < ch.burstCost || ch.dodgeTimer > 0 || !enemy) return;
       ch.energy = 0;
+      ch.spriteActionTimer = Math.max(ch.spriteActionTimer || 0, 36);
       addLog(`${ch.name}：${ch.burstName}`);
 
       if (ch.element === "pyro") {
@@ -1609,6 +1637,7 @@
       if (ch.hitFlash > 0) ch.hitFlash--;
       if (ch.dodgeTimer > 0) ch.dodgeTimer--;
       if (ch.switchInvuln > 0) ch.switchInvuln--;
+      if (ch.spriteActionTimer > 0) ch.spriteActionTimer--;
 
       if (ch.dodgeTimer <= 0) {
         ch.vx = clamp(ch.vx, -moveSpeed, moveSpeed);
@@ -2025,35 +2054,58 @@
       }
 
       ctx.translate(px + ch.w / 2, ch.y + ch.h / 2);
-      ctx.scale(ch.facing, 1);
+      if (ch.element === "pyro") {
+        const frame = getHinoFrame(ch);
+        const img = hinoSprites[frame];
+        const scaleX = ch.facing === 1 ? -1 : 1;
+        ctx.scale(scaleX, 1);
 
-      ctx.fillStyle = ch.hitFlash > 0 ? "#fff4f4" : ch.color;
-      ctx.fillRect(-12, -10, 24, 34);
+        if (img && img.complete && img.naturalWidth > 0) {
+          const drawW = 56;
+          const drawH = 84;
+          ctx.imageSmoothingEnabled = true;
+          if (ch.hitFlash > 0) {
+            ctx.globalAlpha *= 0.82;
+          }
+          ctx.drawImage(img, -drawW / 2, -drawH / 2 + 6, drawW, drawH);
+        } else {
+          ctx.fillStyle = ch.hitFlash > 0 ? "#fff4f4" : ch.color;
+          ctx.fillRect(-12, -10, 24, 34);
+          ctx.beginPath();
+          ctx.arc(0, -24, 14, 0, Math.PI * 2);
+          ctx.fillStyle = ch.hitFlash > 0 ? "#fff7f7" : ch.secondary;
+          ctx.fill();
+        }
+      } else {
+        ctx.scale(ch.facing, 1);
 
-      ctx.beginPath();
-      ctx.arc(0, -24, 14, 0, Math.PI * 2);
-      ctx.fillStyle = ch.hitFlash > 0 ? "#fff7f7" : ch.secondary;
-      ctx.fill();
+        ctx.fillStyle = ch.hitFlash > 0 ? "#fff4f4" : ch.color;
+        ctx.fillRect(-12, -10, 24, 34);
 
-      ctx.strokeStyle = ch.hitFlash > 0 ? "#fff5f5" : ch.secondary;
-      ctx.lineWidth = 6;
-      ctx.beginPath();
-      ctx.moveTo(-10, -4);
-      if (ch.attackTimer > 12 && ch.element === "pyro") ctx.lineTo(-24, 8);
-      else ctx.lineTo(-20, 10);
-      ctx.moveTo(10, -4);
-      if (ch.attackTimer > 12 && ch.element === "electro") ctx.lineTo(24, 4);
-      else ctx.lineTo(20, 10);
-      ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(0, -24, 14, 0, Math.PI * 2);
+        ctx.fillStyle = ch.hitFlash > 0 ? "#fff7f7" : ch.secondary;
+        ctx.fill();
 
-      ctx.strokeStyle = ch.color;
-      ctx.lineWidth = 7;
-      ctx.beginPath();
-      ctx.moveTo(-6, 24);
-      ctx.lineTo(-10, 42);
-      ctx.moveTo(6, 24);
-      ctx.lineTo(10, 42);
-      ctx.stroke();
+        ctx.strokeStyle = ch.hitFlash > 0 ? "#fff5f5" : ch.secondary;
+        ctx.lineWidth = 6;
+        ctx.beginPath();
+        ctx.moveTo(-10, -4);
+        ctx.lineTo(-20, 10);
+        ctx.moveTo(10, -4);
+        if (ch.attackTimer > 12 && ch.element === "electro") ctx.lineTo(24, 4);
+        else ctx.lineTo(20, 10);
+        ctx.stroke();
+
+        ctx.strokeStyle = ch.color;
+        ctx.lineWidth = 7;
+        ctx.beginPath();
+        ctx.moveTo(-6, 24);
+        ctx.lineTo(-10, 42);
+        ctx.moveTo(6, 24);
+        ctx.lineTo(10, 42);
+        ctx.stroke();
+      }
 
       if (ch.attackTimer > 12) {
         if (ch.element === "pyro") {
