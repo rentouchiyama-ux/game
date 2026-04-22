@@ -735,12 +735,13 @@
     }
 
     function getHinoFrame(ch) {
-      if (!ch.onGround) {
-        if ((ch.jumpFrameTimer || 0) > 0) return 4;
-        return 5;
-      }
-
       if ((ch.spriteActionTimer || 0) > 0 || ch.attackTimer > 0) return 6;
+
+      if (!ch.onGround) {
+        if (ch.vy < -2.5) return 4;
+        if (ch.vy < 2.5) return 5;
+        return 4;
+      }
 
       if (Math.abs(ch.vx) > 0.5) {
         return Math.floor(Date.now() / 170) % 2 === 0 ? 2 : 3;
