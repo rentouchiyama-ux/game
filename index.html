@@ -1004,14 +1004,14 @@
         bodyType: "beast"
       },
       {
-        name: "蒼牙の機兵",
+        name: "蒼影の異海獣",
         maxHp: 860,
         w: 92,
         h: 122,
-        baseColor: "#1b4a7c",
-        accentColor: "#8ec7ff",
-        hornColor: "#dff1ff",
-        bodyType: "robot"
+        baseColor: "#13456c",
+        accentColor: "#7fd5ff",
+        hornColor: "#d5f6ff",
+        bodyType: "leviathan"
       },
       {
         name: "紫電の巨兵",
@@ -2139,17 +2139,51 @@
         ctx.stroke();
       }
 
-      if (enemy.bodyType === "robot") {
-        ctx.fillStyle = enemy.hurtFlash > 0 ? "#eef8ff" : enemy.baseColor;
-        ctx.fillRect(-28, -28, 56, 78);
+      if (enemy.bodyType === "leviathan") {
+        const bodyColor = enemy.hurtFlash > 0 ? "#eaf8ff" : enemy.baseColor;
+
+        ctx.fillStyle = bodyColor;
+        ctx.beginPath();
+        ctx.ellipse(-2, 2, 38, 24, 0.1, 0, Math.PI * 2);
+        ctx.fill();
+
         ctx.fillStyle = enemy.accentColor;
-        ctx.fillRect(-14, -48, 28, 20);
-        ctx.fillStyle = "#ffffff";
-        ctx.fillRect(-10, -44, 6, 6);
-        ctx.fillRect(4, -44, 6, 6);
+        ctx.beginPath();
+        ctx.ellipse(22, -10, 24, 14, -0.2, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = "rgba(215, 246, 255, 0.92)";
+        ctx.beginPath();
+        ctx.arc(30, -13, 5, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = "#0e2a47";
+        ctx.beginPath();
+        ctx.arc(31, -13, 2, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = bodyColor;
+        ctx.beginPath();
+        ctx.moveTo(-40, -4);
+        ctx.quadraticCurveTo(-58, -24, -68, -8);
+        ctx.quadraticCurveTo(-58, 6, -42, 8);
+        ctx.closePath();
+        ctx.fill();
+
         ctx.strokeStyle = enemy.hornColor;
-        ctx.lineWidth = 3;
-        ctx.strokeRect(-28, -28, 56, 78);
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.moveTo(20, -24); ctx.quadraticCurveTo(34, -46, 40, -28);
+        ctx.moveTo(6, -24); ctx.quadraticCurveTo(16, -48, 24, -30);
+        ctx.stroke();
+
+        ctx.fillStyle = "rgba(185, 238, 255, 0.82)";
+        ctx.beginPath();
+        ctx.moveTo(-8, 10);
+        ctx.quadraticCurveTo(-20, 32, 0, 30);
+        ctx.quadraticCurveTo(14, 24, 8, 8);
+        ctx.closePath();
+        ctx.fill();
       }
 
       if (enemy.bodyType === "brute") {
@@ -2167,12 +2201,21 @@
         ctx.stroke();
       }
 
-      ctx.strokeStyle = enemy.baseColor;
-      ctx.lineWidth = 10;
-      ctx.beginPath();
-      ctx.moveTo(-20, 32); ctx.lineTo(-24, 60);
-      ctx.moveTo(20, 32); ctx.lineTo(24, 60);
-      ctx.stroke();
+      if (enemy.bodyType === "leviathan") {
+        ctx.strokeStyle = enemy.baseColor;
+        ctx.lineWidth = 8;
+        ctx.beginPath();
+        ctx.moveTo(-10, 20); ctx.quadraticCurveTo(-28, 38, -38, 56);
+        ctx.moveTo(6, 22); ctx.quadraticCurveTo(14, 40, 10, 60);
+        ctx.stroke();
+      } else {
+        ctx.strokeStyle = enemy.baseColor;
+        ctx.lineWidth = 10;
+        ctx.beginPath();
+        ctx.moveTo(-20, 32); ctx.lineTo(-24, 60);
+        ctx.moveTo(20, 32); ctx.lineTo(24, 60);
+        ctx.stroke();
+      }
 
       ctx.restore();
 
