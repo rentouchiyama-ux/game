@@ -995,7 +995,8 @@
         hitFlash: 0,
         switchInvuln: 0,
         attackStyle: "",
-        spriteActionTimer: 0
+        spriteActionTimer: 0,
+        jumpFrameTimer: 0
       };
     }
 
@@ -1205,7 +1206,7 @@
       addLog("回復アイテム取得：全員回復");
     }
 
-    function dealDamageToEnemy(amount, hitElement = null, x = enemy?.x + enemy?.w / 2, y = enemy?.y + 20) {
+    function dealDamageToEnemy(amount, hitElement = null, x = enemy?.x + enemy?.w / 2, y = enemy?.y + 20, energyGain = 0) {
       if (!enemy || enemy.hp <= 0) return;
       let finalDamage = amount;
       let reactionResult = null;
@@ -1240,11 +1241,13 @@
       finalDamage = Math.round(finalDamage);
       enemy.hp = Math.max(0, enemy.hp - finalDamage);
       enemy.hurtFlash = 8;
+      if (energyGain > 0) {
+        const ch = activeChar();
+        if (ch && ch.hp > 0) ch.energy = clamp(ch.energy + energyGain, 0, ch.burstCost);
+      }
 
       spawnDamageText(x + rand(-16, 16), y + rand(-10, 10), String(finalDamage), reactionResult ? "#ffe27d" : "#ffffff", reactionResult ? 1.18 : 1, 82);
       spawnParticle(x, y, hitElement ? elementColor(hitElement) : "#ffffff", reactionResult ? 18 : 10, 1.8, reactionResult ? 5.5 : 3.3);
-
-      activeChar().energy = clamp(activeChar().energy + 6 + Math.floor(finalDamage * 0.04), 0, 100);
 
       if (reactionResult) {
         spawnDamageText(x, y - 22, reactionResult.name, "#ffd56b", 1.0, 112);
@@ -1273,12 +1276,13 @@
     }
 
     // ---------- バトル ----------
-    function createHitbox(owner, x, y, w, h, damage, duration, element = null, knock = 0, color = null) {
+    function createHitbox(owner, x, y, w, h, damage, duration, element = null, knock = 0, color = null, energyGain = 0) {
       hitboxes.push({
         owner, x, y, w, h, damage, duration,
         element, knock,
         hitSet: new Set(),
-        color: color || (element ? elementColor(element) : "#ffffff")
+        color: color || (element ? elementColor(element) : "#ffffff"),
+        energyGain
       });
     }
 
@@ -1303,7 +1307,7 @@
         damage *= ch.attackIndex === 3 ? 1.45 : 1.12;
         effectColor = "#ff7a3d";
         const x = ch.facing === 1 ? ch.x + ch.w - 2 : ch.x - hbW + 2;
-        createHitbox("player", x, baseY, hbW, hbH, Math.round(damage), 8, ch.attackIndex === 3 ? "pyro" : null, 6, effectColor);
+        createHitbox("player", x, baseY, hbW, hbH, Math.round(damage), 8, ch.attackIndex === 3 ? "pyro" : null, 6, effectColor, 4);
         spawnParticle(ch.x + ch.w / 2 + ch.facing * 34, ch.y + 30, effectColor, 14, 1.8, 3.0);
       }
 
@@ -1313,7 +1317,7 @@
           hbH = 26;
           damage *= 1.06;
           const x = ch.facing === 1 ? ch.x + ch.w - 2 : ch.x - hbW + 2;
-          createHitbox("player", x, baseY, hbW, hbH, Math.round(damage), 8, null, 6, "#9fdcff");
+          createHitbox("player", x, baseY, hbW, hbH, Math.round(damage), 8, null, 6, "#9fdcff", 4);
           spawnParticle(ch.x + ch.w / 2 + ch.facing * 30, ch.y + 26, "#4ca8ff", 10, 1.4, 2.4);
         } else {
           projectiles.push({
@@ -1327,7 +1331,8 @@
             life: 60,
             element: "hydro",
             color: "#4ca8ff",
-            trail: true
+            trail: true,
+            energyGain: 4
           });
           spawnParticle(ch.x + ch.w / 2, ch.y + 24, "#4ca8ff", 14, 1.6, 2.6);
         }
@@ -1338,7 +1343,7 @@
         hbH = 30;
         damage *= ch.attackIndex === 2 ? 1.22 : 1.08;
         const x = ch.facing === 1 ? ch.x + ch.w - 2 : ch.x - hbW + 2;
-        createHitbox("player", x, baseY, hbW, hbH, Math.round(damage), 8, ch.attackIndex === 2 ? "electro" : null, 6, "#b07cff");
+        createHitbox("player", x, baseY, hbW, hbH, Math.round(damage), 8, ch.attackIndex === 2 ? "electro" : null, 6, "#b07cff", 4);
         spawnParticle(ch.x + ch.w / 2 + ch.facing * 32, ch.y + 28, "#b07cff", 15, 2.0, 3.4);
       }
 
@@ -1347,12 +1352,11 @@
         hbH = 30;
         damage *= ch.attackIndex === 3 ? 1.34 : 1.08;
         const x = ch.facing === 1 ? ch.x + ch.w - 2 : ch.x - hbW + 2;
-        createHitbox("player", x, baseY, hbW, hbH, Math.round(damage), 8, ch.attackIndex === 3 ? "cryo" : null, 6, "#8de7ff");
+        createHitbox("player", x, baseY, hbW, hbH, Math.round(damage), 8, ch.attackIndex === 3 ? "cryo" : null, 6, "#8de7ff", 4);
         spawnParticle(ch.x + ch.w / 2 + ch.facing * 30, ch.y + 26, "#8de7ff", 12, 1.6, 2.8);
       }
 
       ch.vx += ch.facing * 0.5;
-      ch.energy = clamp(ch.energy + 4, 0, 100);
     }
 
     function performChargedAttack(ch) {
@@ -1371,7 +1375,6 @@
       spawnDamageText(ch.x + ch.w / 2, ch.y - 6, "重撃", "#ffe9a6", 0.95, 92);
 
       ch.vx += ch.facing * 1.8;
-      ch.energy = clamp(ch.energy + 8, 0, 100);
       addLog(`${ch.name}：重撃`);
     }
 
@@ -1384,7 +1387,7 @@
         const hbW = 96, hbH = 54;
         const x = ch.facing === 1 ? ch.x + ch.w : ch.x - hbW;
         const y = ch.y + 8;
-        createHitbox("player", x, y, hbW, hbH, Math.round(ch.attack * 2.2), 16, "pyro", 10);
+        createHitbox("player", x, y, hbW, hbH, Math.round(ch.attack * 2.2), 16, "pyro", 10, null, 10);
         spawnParticle(x + hbW / 2, y + hbH / 2, "#ff7a3d", 26, 1.8, 4.4);
       }
 
@@ -1401,7 +1404,8 @@
           life: 90,
           element: "hydro",
           color: "#4ca8ff",
-          trail: true
+          trail: true,
+          energyGain: 10
         });
         spawnParticle(ch.x + ch.w / 2, ch.y + 22, "#4ca8ff", 20, 1.3, 3.5);
       }
@@ -1411,7 +1415,7 @@
         const hbW = 84, hbH = 48;
         const x = ch.facing === 1 ? ch.x + ch.w : ch.x - hbW;
         const y = ch.y + 12;
-        createHitbox("player", x, y, hbW, hbH, Math.round(ch.attack * 2.0), 10, "electro", 14);
+        createHitbox("player", x, y, hbW, hbH, Math.round(ch.attack * 2.0), 10, "electro", 14, null, 10);
         spawnParticle(x + hbW / 2, y + hbH / 2, "#b07cff", 28, 2.1, 4.7);
       }
 
@@ -1428,14 +1432,14 @@
             life: 88,
             element: "cryo",
             color: "#8de7ff",
-            trail: true
+            trail: true,
+            energyGain: 10
           });
         }
         spawnParticle(ch.x + ch.w / 2, ch.y + 25, "#8de7ff", 22, 1.8, 3.3);
       }
 
       addLog(`${ch.name}：${ch.skillName}`);
-      ch.energy = clamp(ch.energy + 12, 0, 100);
     }
 
     function castBurst(ch) {
@@ -1445,12 +1449,16 @@
       addLog(`${ch.name}：${ch.burstName}`);
 
       if (ch.element === "pyro") {
+        const cx = enemy.x + enemy.w / 2;
+        const cy = groundY() - 54;
+        const r = 66;
         fields.push({
-          x: enemy.x - 40, y: groundY() - 100, w: 180, h: 100,
-          life: 180, tick: 0, damage: Math.round(ch.attack * 1.1),
-          element: "pyro", type: "burstField", color: "rgba(255,122,61,0.28)"
+          x: cx - r, y: cy - r, w: r * 2, h: r * 2,
+          cx, cy, r,
+          life: 180, tick: 0, damage: Math.round(ch.attack * 1.05),
+          element: "pyro", type: "pyroTornado", color: "rgba(255,122,61,0.22)"
         });
-        spawnParticle(enemy.x + enemy.w / 2, enemy.y + enemy.h / 2, "#ff7a3d", 70, 2.6, 5.2);
+        spawnParticle(cx, cy - 24, "#ff7a3d", 90, 2.8, 5.6);
       }
 
       if (ch.element === "hydro") {
@@ -1615,6 +1623,7 @@
         if (ch.onGround) {
           ch.vy = -12.6;
           ch.onGround = false;
+          ch.jumpFrameTimer = 9;
           spawnParticle(ch.x + ch.w / 2, ch.y + ch.h, "#dbe4ff", 10, 1.2, 2.0);
         }
       }
@@ -1639,6 +1648,7 @@
       if (ch.dodgeTimer > 0) ch.dodgeTimer--;
       if (ch.switchInvuln > 0) ch.switchInvuln--;
       if (ch.spriteActionTimer > 0) ch.spriteActionTimer--;
+      if (ch.jumpFrameTimer > 0) ch.jumpFrameTimer--;
 
       if (ch.dodgeTimer <= 0) {
         ch.vx = clamp(ch.vx, -moveSpeed, moveSpeed);
@@ -1749,7 +1759,7 @@
           const enemyRect = { x: enemy.x, y: enemy.y, w: enemy.w, h: enemy.h };
           if (rectsHit(hb, enemyRect) && !hb.hitSet.has("enemy")) {
             hb.hitSet.add("enemy");
-            dealDamageToEnemy(hb.damage, hb.element, enemy.x + enemy.w / 2, enemy.y + 34);
+            dealDamageToEnemy(hb.damage, hb.element, enemy.x + enemy.w / 2, enemy.y + 34, hb.energyGain || 0);
           }
         }
 
@@ -1797,7 +1807,7 @@
             p.y - p.r < enemy.y + enemy.h
           );
           if (hitEnemy) {
-            dealDamageToEnemy(p.damage, p.element, p.x, p.y);
+            dealDamageToEnemy(p.damage, p.element, p.x, p.y, p.energyGain || 0);
             spawnParticle(p.x, p.y, p.color, 16, 1.7, 3.5);
             remove = true;
           }
@@ -1836,15 +1846,42 @@
         f.life--;
         f.tick++;
 
+        if (f.type === "pyroTornado") {
+          if (enemy && enemy.hp > 0) {
+            const tx = enemy.x + enemy.w / 2;
+            const ty = groundY() - 54;
+            f.cx += (tx - f.cx) * 0.13;
+            f.cy += (ty - f.cy) * 0.11;
+          }
+          f.x = f.cx - f.r;
+          f.y = f.cy - f.r;
+          f.w = f.r * 2;
+          f.h = f.r * 2;
+        }
+
         if (enemy && enemy.hp > 0) {
           const enemyRect = { x: enemy.x, y: enemy.y, w: enemy.w, h: enemy.h };
           if (rectsHit(f, enemyRect)) {
-            if (f.tick % 18 === 0) dealDamageToEnemy(f.damage, f.element, enemy.x + enemy.w / 2, enemy.y + 18);
+            const tickRate = f.type === "pyroTornado" ? 10 : 18;
+            if (f.tick % tickRate === 0) dealDamageToEnemy(f.damage, f.element, enemy.x + enemy.w / 2, enemy.y + 18);
             if (f.type === "freezeStorm" && f.tick % 22 === 0) enemy.vx *= 0.55;
           }
         }
 
-        if (Math.random() < 0.65) {
+        if (f.type === "pyroTornado" && Math.random() < 0.9) {
+          const ang = Math.random() * Math.PI * 2;
+          const rr = rand(f.r * 0.2, f.r * 0.95);
+          particles.push({
+            x: f.cx + Math.cos(ang) * rr,
+            y: f.cy + Math.sin(ang) * rr * 0.85,
+            vx: Math.cos(ang + Math.PI / 2) * rand(1.2, 2.2),
+            vy: -rand(1.1, 2.3),
+            life: rand(16, 30),
+            maxLife: 30,
+            size: rand(3, 6),
+            color: Math.random() < 0.45 ? "#ffd28f" : "#ff7a3d"
+          });
+        } else if (Math.random() < 0.65) {
           particles.push({
             x: rand(f.x, f.x + f.w),
             y: rand(f.y, f.y + f.h),
@@ -2062,13 +2099,14 @@
         ctx.scale(scaleX, 1);
 
         if (img && img.complete && img.naturalWidth > 0) {
-          const drawW = 56;
-          const drawH = 84;
+          const isAttackFrame = frame === 6;
+          const drawH = Math.round(ch.h * (isAttackFrame ? 1.44 : 1.36));
+          const drawW = Math.round(ch.w * (isAttackFrame ? 2.5 : 2.35));
           ctx.imageSmoothingEnabled = true;
           if (ch.hitFlash > 0) {
             ctx.globalAlpha *= 0.82;
           }
-          ctx.drawImage(img, -drawW / 2, -drawH / 2 + 6, drawW, drawH);
+          ctx.drawImage(img, -drawW / 2, -drawH / 2 + 8, drawW, drawH);
         } else {
           ctx.fillStyle = ch.hitFlash > 0 ? "#fff4f4" : ch.color;
           ctx.fillRect(-12, -10, 24, 34);
@@ -2165,11 +2203,43 @@
       ctx.fill();
 
       if (enemy.elementAura) {
-        ctx.strokeStyle = elementColor(enemy.elementAura);
-        ctx.lineWidth = 3;
-        ctx.beginPath();
-        ctx.arc(px + enemy.w / 2, enemy.y + 40, 50 + Math.sin(Date.now() * 0.009) * 3, 0, Math.PI * 2);
-        ctx.stroke();
+        if (enemy.elementAura === "pyro") {
+          const cx = px + enemy.w / 2;
+          const cy = enemy.y + 40;
+          const t = Date.now() * 0.01;
+          const core = 42 + Math.sin(t * 1.6) * 2;
+          const grd = ctx.createRadialGradient(cx, cy, 8, cx, cy, core + 20);
+          grd.addColorStop(0, "rgba(255,250,215,0.72)");
+          grd.addColorStop(0.35, "rgba(255,166,96,0.46)");
+          grd.addColorStop(1, "rgba(255,110,52,0.05)");
+          ctx.fillStyle = grd;
+          ctx.beginPath();
+          ctx.arc(cx, cy, core + 20, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.strokeStyle = "rgba(255,176,112,0.86)";
+          ctx.lineWidth = 2.5;
+          for (let i = 0; i < 4; i++) {
+            ctx.beginPath();
+            const phase = t + i * 1.5;
+            for (let s = 0; s <= 14; s++) {
+              const p = s / 14;
+              const ang = phase + p * Math.PI * 1.9;
+              const rr = 24 + p * 34 + Math.sin(phase * 1.8 + p * 5) * 3;
+              const fx = cx + Math.cos(ang) * rr;
+              const fy = cy + Math.sin(ang) * rr * 0.6 - p * 16;
+              if (s === 0) ctx.moveTo(fx, fy);
+              else ctx.lineTo(fx, fy);
+            }
+            ctx.stroke();
+          }
+        } else {
+          ctx.strokeStyle = elementColor(enemy.elementAura);
+          ctx.lineWidth = 3;
+          ctx.beginPath();
+          ctx.arc(px + enemy.w / 2, enemy.y + 40, 50 + Math.sin(Date.now() * 0.009) * 3, 0, Math.PI * 2);
+          ctx.stroke();
+        }
       }
 
       ctx.translate(px + enemy.w / 2, enemy.y + enemy.h / 2);
@@ -2351,11 +2421,42 @@
         const px = sx(f.x);
         if (px + f.w < -80 || px > VIEW_W() + 80) continue;
         ctx.save();
-        ctx.fillStyle = f.color;
-        ctx.fillRect(px, f.y, f.w, f.h);
-        ctx.strokeStyle = elementColor(f.element);
-        ctx.lineWidth = 2;
-        ctx.strokeRect(px, f.y, f.w, f.h);
+        if (f.type === "pyroTornado") {
+          const cpx = sx(f.cx);
+          const t = f.tick * 0.12;
+          const flameR = f.r * (0.82 + Math.sin(t) * 0.05);
+          const grd = ctx.createRadialGradient(cpx, f.cy, 8, cpx, f.cy, flameR);
+          grd.addColorStop(0, "rgba(255,248,214,0.78)");
+          grd.addColorStop(0.35, "rgba(255,170,90,0.62)");
+          grd.addColorStop(1, "rgba(255,98,40,0.12)");
+          ctx.fillStyle = grd;
+          ctx.beginPath();
+          ctx.arc(cpx, f.cy, flameR, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.strokeStyle = "rgba(255,188,112,0.88)";
+          ctx.lineWidth = 3;
+          for (let k = 0; k < 3; k++) {
+            ctx.beginPath();
+            const phase = t + k * 2.1;
+            for (let s = 0; s <= 10; s++) {
+              const p = s / 10;
+              const a = phase + p * Math.PI * 2;
+              const rr = f.r * (0.26 + p * 0.58 + Math.sin(phase + p * 6) * 0.05);
+              const x = cpx + Math.cos(a) * rr;
+              const y = f.cy - f.r * 0.7 + p * f.r * 1.45 + Math.sin(a * 1.8) * 5;
+              if (s === 0) ctx.moveTo(x, y);
+              else ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+          }
+        } else {
+          ctx.fillStyle = f.color;
+          ctx.fillRect(px, f.y, f.w, f.h);
+          ctx.strokeStyle = elementColor(f.element);
+          ctx.lineWidth = 2;
+          ctx.strokeRect(px, f.y, f.w, f.h);
+        }
         ctx.restore();
       }
     }
