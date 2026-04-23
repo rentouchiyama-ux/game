@@ -737,7 +737,7 @@
     const skillCooldownText = document.getElementById("skillCooldownText");
 
     const hinoSprites = {};
-    for (let i = 1; i <= 6; i++) {
+    for (let i = 1; i <= 8; i++) {
       const img = new Image();
       img.src = `hino_${i}.png`;
       hinoSprites[i] = img;
@@ -1632,6 +1632,7 @@
       const moveSpeed = ch.speed;
 
       const moveMag = Math.abs(input.moveX);
+      ch.moveInputMag = moveMag;
       const accel = moveMag < 0.35 ? 0.34 : 0.82;
 
       if (input.moveX < -0.12) {
@@ -2154,8 +2155,8 @@
 
         if (img && img.complete && img.naturalWidth > 0) {
           const isAttackFrame = frame === 6;
-          const drawH = Math.round(ch.h * (isAttackFrame ? 1.44 : 1.36));
-          const drawW = Math.round(ch.w * (isAttackFrame ? 2.5 : 2.35));
+          const drawH = Math.round(ch.h * (isAttackFrame ? 1.6 : 1.36));
+          const drawW = Math.round(ch.w * (isAttackFrame ? 2.7 : 2.35));
           ctx.imageSmoothingEnabled = true;
           if (ch.hitFlash > 0) {
             ctx.globalAlpha *= 0.82;
@@ -2296,6 +2297,20 @@
         }
       }
 
+      if (enemy.bodyType === "dragon") {
+        const ax = px + enemy.w / 2;
+        const ay = enemy.y + enemy.h / 2 - 6;
+        const auraPulse = 62 + Math.sin(Date.now() * 0.007) * 6;
+        const aura = ctx.createRadialGradient(ax, ay, 10, ax, ay, auraPulse);
+        aura.addColorStop(0, "rgba(220,188,255,0.18)");
+        aura.addColorStop(0.55, "rgba(132,94,182,0.14)");
+        aura.addColorStop(1, "rgba(68,38,96,0.02)");
+        ctx.fillStyle = aura;
+        ctx.beginPath();
+        ctx.arc(ax, ay, auraPulse, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
       ctx.translate(px + enemy.w / 2, enemy.y + enemy.h / 2);
       ctx.scale(enemy.facing, 1);
 
@@ -2433,12 +2448,82 @@
         ctx.stroke();
       }
 
+      if (enemy.bodyType === "dragon") {
+        const body = enemy.hurtFlash > 0 ? "#f5ebff" : enemy.baseColor;
+        const trim = enemy.hurtFlash > 0 ? "#fff9ff" : enemy.accentColor;
+
+        ctx.fillStyle = body;
+        ctx.beginPath();
+        ctx.ellipse(-4, 4, 44, 34, 0.04, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = body;
+        ctx.beginPath();
+        ctx.ellipse(34, -8, 28, 20, -0.14, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = trim;
+        for (let i = 0; i < 9; i++) {
+          const t = i / 8;
+          const sx = -34 + t * 58;
+          const sy = -20 - Math.sin(t * Math.PI) * 10;
+          ctx.beginPath();
+          ctx.moveTo(sx, sy);
+          ctx.lineTo(sx + 8, sy - 9);
+          ctx.lineTo(sx + 15, sy - 1);
+          ctx.closePath();
+          ctx.fill();
+        }
+
+        ctx.fillStyle = "rgba(28,18,38,0.96)";
+        ctx.beginPath();
+        ctx.arc(44, -10, 4, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.strokeStyle = enemy.hornColor;
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.moveTo(42, -24); ctx.quadraticCurveTo(56, -48, 64, -30);
+        ctx.moveTo(26, -24); ctx.quadraticCurveTo(34, -50, 44, -32);
+        ctx.stroke();
+
+        ctx.strokeStyle = trim;
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(-44, -4);
+        ctx.quadraticCurveTo(-78, -22, -88, -8);
+        ctx.quadraticCurveTo(-74, 8, -46, 12);
+        ctx.stroke();
+
+        ctx.fillStyle = "rgba(52,36,70,0.92)";
+        ctx.beginPath();
+        ctx.moveTo(-18, 14);
+        ctx.quadraticCurveTo(-36, 42, -8, 36);
+        ctx.quadraticCurveTo(10, 26, 2, 10);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.beginPath();
+        ctx.moveTo(18, 16);
+        ctx.quadraticCurveTo(6, 40, 30, 34);
+        ctx.quadraticCurveTo(50, 24, 38, 10);
+        ctx.closePath();
+        ctx.fill();
+      }
+
       if (enemy.bodyType === "leviathan") {
         ctx.strokeStyle = enemy.baseColor;
         ctx.lineWidth = 8;
         ctx.beginPath();
         ctx.moveTo(-10, 20); ctx.quadraticCurveTo(-28, 38, -38, 56);
         ctx.moveTo(6, 22); ctx.quadraticCurveTo(14, 40, 10, 60);
+        ctx.stroke();
+      } else if (enemy.bodyType === "dragon") {
+        ctx.strokeStyle = enemy.baseColor;
+        ctx.lineWidth = 8;
+        ctx.beginPath();
+        ctx.moveTo(-18, 26); ctx.quadraticCurveTo(-12, 56, -4, 68);
+        ctx.moveTo(12, 26); ctx.quadraticCurveTo(22, 54, 28, 68);
         ctx.stroke();
       } else {
         ctx.strokeStyle = enemy.baseColor;
