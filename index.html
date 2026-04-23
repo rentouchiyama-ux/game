@@ -751,7 +751,11 @@
 
       if ((ch.spriteActionTimer || 0) > 0 || ch.attackTimer > 0) return 6;
 
-      if (Math.abs(ch.vx) > 0.5) {
+      const inputMag = ch.moveInputMag || 0;
+      if (inputMag >= 0.5) {
+        return Math.floor(Date.now() / 120) % 2 === 0 ? 7 : 8;
+      }
+      if (inputMag > 0.12) {
         return Math.floor(Date.now() / 170) % 2 === 0 ? 2 : 3;
       }
 
@@ -783,6 +787,7 @@
 
     const input = {
       moveX: 0,
+      moveIntensity: 0,
       jumpQueued: false,
       attackQueued: false,
       chargedAttackQueued: false,
@@ -843,6 +848,7 @@
       joystickActive = false;
       joystickPointerId = null;
       input.moveX = 0;
+      input.moveIntensity = 0;
       jumpTriggeredByStick = false;
       joystickKnob.style.transform = "translate(0px,0px)";
       joystickArea.style.transition = "left 0.12s ease, bottom 0.12s ease, top 0.12s ease";
@@ -877,6 +883,7 @@
 
       joystickKnob.style.transform = `translate(${nx}px,${ny}px)`;
       input.moveX = clamp(nx / maxLen, -1, 1);
+      input.moveIntensity = clamp(Math.hypot(nx, ny) / maxLen, 0, 1);
 
       if (ny < -maxLen * 0.75 && !jumpTriggeredByStick) {
         input.jumpQueued = true;
@@ -1017,7 +1024,8 @@
         switchInvuln: 0,
         attackStyle: "",
         spriteActionTimer: 0,
-        jumpFrameTimer: 0
+        jumpFrameTimer: 0,
+        moveInputMag: 0
       };
     }
 
@@ -1631,9 +1639,9 @@
 
       const moveSpeed = ch.speed;
 
-      const moveMag = Math.abs(input.moveX);
+      const moveMag = input.moveIntensity;
       ch.moveInputMag = moveMag;
-      const accel = moveMag < 0.35 ? 0.34 : 0.82;
+      const accel = moveMag < 0.45 ? 0.34 : 0.82;
 
       if (input.moveX < -0.12) {
         ch.vx -= accel * moveMag;
