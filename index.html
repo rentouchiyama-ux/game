@@ -314,9 +314,9 @@
     }
 
     #btnAttack {
-      width: 64px;   /* 前回96 → 約2/3 */
-      height: 64px;
-      right: 0;
+      width: 70px;
+      height: 70px;
+      right: 6px;
       bottom: 8px;
       font-size: 13px;
       background:
@@ -347,10 +347,10 @@
     }
 
     #btnSkill {
-      width: 51px;   /* 前回76 → 約2/3 */
-      height: 51px;
-      right: 96px;
-      bottom: 52px;
+      width: 58px;
+      height: 58px;
+      right: 116px;
+      bottom: 58px;
       font-size: 10px;
       background:
         radial-gradient(circle at 30% 25%, rgba(255,255,255,0.10), rgba(255,255,255,0.03) 45%, rgba(0,0,0,0.10) 100%),
@@ -358,10 +358,10 @@
     }
 
     #btnBurst {
-      width: 60px;   /* 前回90 → 約2/3 */
-      height: 60px;
-      right: 24px;
-      bottom: 114px;
+      width: 66px;
+      height: 66px;
+      right: 28px;
+      bottom: 128px;
       font-size: 11px;
       background:
         radial-gradient(circle at 30% 25%, rgba(255,255,255,0.10), rgba(255,255,255,0.03) 45%, rgba(0,0,0,0.10) 100%),
@@ -400,10 +400,10 @@
     }
 
     #btnDodge {
-      width: 40px;   /* 前回60 → 約2/3 */
-      height: 40px;
-      right: 172px;
-      bottom: 8px;
+      width: 48px;
+      height: 48px;
+      right: 198px;
+      bottom: 10px;
       font-size: 9px;
       background:
         radial-gradient(circle at 30% 25%, rgba(255,255,255,0.10), rgba(255,255,255,0.03) 45%, rgba(0,0,0,0.10) 100%),
@@ -437,12 +437,13 @@
 
     #partySwitchBar {
       position: absolute;
-      left: 50%;
-      bottom: 16px;
-      transform: translateX(-50%);
+      left: 10px;
+      top: 50%;
+      transform: translateY(-50%);
       z-index: 22;
       display: flex;
-      gap: 10px;
+      flex-direction: column;
+      gap: 12px;
       pointer-events: auto;
       padding: 8px 10px;
       border-radius: 999px;
@@ -501,6 +502,15 @@
       border-radius: 8px 8px 6px 6px;
     }
 
+    .partyFaceImg {
+      width: 38px;
+      height: 38px;
+      object-fit: cover;
+      border-radius: 50%;
+      border: 1px solid rgba(255,255,255,0.45);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.24);
+    }
+
     .partyShortName {
       position: absolute;
       bottom: 4px;
@@ -513,7 +523,7 @@
       inset: 2px;
       border-radius: 50%;
       pointer-events: none;
-      background: conic-gradient(#5dff9d var(--hpdeg, 100%), rgba(255,255,255,0.08) 0);
+      background: conic-gradient(var(--ringColor, #5dff9d) var(--hpdeg, 100%), rgba(255,255,255,0.08) 0);
       -webkit-mask: radial-gradient(circle, transparent 66%, black 68%);
               mask: radial-gradient(circle, transparent 66%, black 68%);
       opacity: 0.8;
@@ -726,6 +736,32 @@
     const burstEnergyText = document.getElementById("burstEnergyText");
     const skillRadial = document.getElementById("skillRadial");
     const skillCooldownText = document.getElementById("skillCooldownText");
+
+    const hinoSprites = {};
+    for (let i = 1; i <= 8; i++) {
+      const img = new Image();
+      img.src = `hino_${i}.png`;
+      hinoSprites[i] = img;
+    }
+
+    function getHinoFrame(ch) {
+      if (!ch.onGround) {
+        if ((ch.jumpFrameTimer || 0) > 0) return 4;
+        return 5;
+      }
+
+      if ((ch.spriteActionTimer || 0) > 0 || ch.attackTimer > 0) return 6;
+
+      const inputMag = ch.moveInputMag || 0;
+      if (inputMag >= 0.5) {
+        return Math.floor(Date.now() / 120) % 2 === 0 ? 7 : 8;
+      }
+      if (inputMag > 0.12) {
+        return Math.floor(Date.now() / 170) % 2 === 0 ? 2 : 3;
+      }
+
+      return 1;
+    }
     const partySwitchBar = document.getElementById("partySwitchBar");
     const attackChargeRing = document.getElementById("attackChargeRing");
     const attackChargeGlow = document.getElementById("attackChargeGlow");
@@ -752,6 +788,7 @@
 
     const input = {
       moveX: 0,
+      moveIntensity: 0,
       jumpQueued: false,
       attackQueued: false,
       chargedAttackQueued: false,
@@ -799,29 +836,42 @@
       const left = clientX - size / 2;
       const top = clientY - size / 2;
 
+      joystickArea.style.transition = "none";
       joystickArea.style.left = left + "px";
       joystickArea.style.top = top + "px";
       joystickArea.style.bottom = "auto";
 
-      const rect = joystickArea.getBoundingClientRect();
-      joystickCenter = { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
-      joystickRadius = rect.width * 0.23;
+      joystickCenter = { x: clientX, y: clientY };
+      joystickRadius = size * 0.23;
     }
 
     function resetJoystick() {
       joystickActive = false;
       joystickPointerId = null;
       input.moveX = 0;
+      input.moveIntensity = 0;
       jumpTriggeredByStick = false;
       joystickKnob.style.transform = "translate(0px,0px)";
+      joystickArea.style.transition = "left 0.12s ease, bottom 0.12s ease, top 0.12s ease";
       setJoystickHome();
     }
 
     function handleJoystickMove(clientX, clientY) {
-      const dx = clientX - joystickCenter.x;
-      const dy = clientY - joystickCenter.y;
-      const len = Math.hypot(dx, dy);
       const maxLen = joystickRadius;
+      let dx = clientX - joystickCenter.x;
+      let dy = clientY - joystickCenter.y;
+      let len = Math.hypot(dx, dy);
+
+      const stickSize = joystickArea.offsetWidth || 96;
+      if (len > stickSize) {
+        joystickCenter.x = (joystickCenter.x + clientX) * 0.5;
+        joystickCenter.y = (joystickCenter.y + clientY) * 0.5;
+        joystickArea.style.left = (joystickCenter.x - (joystickArea.offsetWidth || 96) / 2) + "px";
+        joystickArea.style.top = (joystickCenter.y - (joystickArea.offsetHeight || 96) / 2) + "px";
+        dx = clientX - joystickCenter.x;
+        dy = clientY - joystickCenter.y;
+        len = Math.hypot(dx, dy);
+      }
 
       let nx = dx;
       let ny = dy;
@@ -832,6 +882,7 @@
 
       joystickKnob.style.transform = `translate(${nx}px,${ny}px)`;
       input.moveX = clamp(nx / maxLen, -1, 1);
+      input.moveIntensity = clamp(Math.hypot(nx, ny) / maxLen, 0, 1);
 
       if (ny < -maxLen * 0.75 && !jumpTriggeredByStick) {
         input.jumpQueued = true;
@@ -970,7 +1021,10 @@
         stamina: 100,
         hitFlash: 0,
         switchInvuln: 0,
-        attackStyle: ""
+        attackStyle: "",
+        spriteActionTimer: 0,
+        jumpFrameTimer: 0,
+        moveInputMag: 0
       };
     }
 
@@ -998,30 +1052,30 @@
         maxHp: 700,
         w: 84,
         h: 110,
-        baseColor: "#7c2038",
-        accentColor: "#ff9d72",
-        hornColor: "#ffd4d4",
-        bodyType: "beast"
+        baseColor: "#2e3349",
+        accentColor: "#8f9bb8",
+        hornColor: "#e8ecff",
+        bodyType: "shadowKnight"
       },
       {
-        name: "蒼牙の機兵",
+        name: "蒼影の異海獣",
         maxHp: 860,
         w: 92,
         h: 122,
-        baseColor: "#1b4a7c",
-        accentColor: "#8ec7ff",
-        hornColor: "#dff1ff",
-        bodyType: "robot"
+        baseColor: "#13456c",
+        accentColor: "#7fd5ff",
+        hornColor: "#d5f6ff",
+        bodyType: "leviathan"
       },
       {
-        name: "紫電の巨兵",
+        name: "終焉の冥鱗竜",
         maxHp: 1100,
-        w: 104,
-        h: 134,
-        baseColor: "#43215f",
-        accentColor: "#d0a4ff",
-        hornColor: "#f0ddff",
-        bodyType: "brute"
+        w: 132,
+        h: 146,
+        baseColor: "#2f2436",
+        accentColor: "#a684d6",
+        hornColor: "#f3e7ff",
+        bodyType: "dragon"
       }
     ];
 
@@ -1064,8 +1118,13 @@
         enemy = null;
         return;
       }
+      fields = [];
+      hitboxes = [];
+      projectiles = [];
       const spawnX = 2200 + currentEnemyIndex * 450;
       enemy = createEnemyFromTemplate(enemyTemplates[currentEnemyIndex], spawnX);
+      enemy.elementAura = null;
+      enemy.auraTimer = 0;
       addLog(`${enemy.name} 出現`);
     }
 
@@ -1180,7 +1239,7 @@
       addLog("回復アイテム取得：全員回復");
     }
 
-    function dealDamageToEnemy(amount, hitElement = null, x = enemy?.x + enemy?.w / 2, y = enemy?.y + 20) {
+    function dealDamageToEnemy(amount, hitElement = null, x = enemy?.x + enemy?.w / 2, y = enemy?.y + 20, energyGain = 0) {
       if (!enemy || enemy.hp <= 0) return;
       let finalDamage = amount;
       let reactionResult = null;
@@ -1215,11 +1274,13 @@
       finalDamage = Math.round(finalDamage);
       enemy.hp = Math.max(0, enemy.hp - finalDamage);
       enemy.hurtFlash = 8;
+      if (energyGain > 0) {
+        const ch = activeChar();
+        if (ch && ch.hp > 0) ch.energy = clamp(ch.energy + energyGain, 0, ch.burstCost);
+      }
 
       spawnDamageText(x + rand(-16, 16), y + rand(-10, 10), String(finalDamage), reactionResult ? "#ffe27d" : "#ffffff", reactionResult ? 1.18 : 1, 82);
       spawnParticle(x, y, hitElement ? elementColor(hitElement) : "#ffffff", reactionResult ? 18 : 10, 1.8, reactionResult ? 5.5 : 3.3);
-
-      activeChar().energy = clamp(activeChar().energy + 6 + Math.floor(finalDamage * 0.04), 0, 100);
 
       if (reactionResult) {
         spawnDamageText(x, y - 22, reactionResult.name, "#ffd56b", 1.0, 112);
@@ -1248,12 +1309,13 @@
     }
 
     // ---------- バトル ----------
-    function createHitbox(owner, x, y, w, h, damage, duration, element = null, knock = 0, color = null) {
+    function createHitbox(owner, x, y, w, h, damage, duration, element = null, knock = 0, color = null, energyGain = 0) {
       hitboxes.push({
         owner, x, y, w, h, damage, duration,
         element, knock,
         hitSet: new Set(),
-        color: color || (element ? elementColor(element) : "#ffffff")
+        color: color || (element ? elementColor(element) : "#ffffff"),
+        energyGain
       });
     }
 
@@ -1262,6 +1324,7 @@
 
       ch.attackIndex = (ch.attackIndex % 3) + 1;
       ch.attackTimer = 20;
+      ch.spriteActionTimer = Math.max(ch.spriteActionTimer || 0, 18);
 
       const baseX = ch.facing === 1 ? ch.x + ch.w : ch.x;
       const baseY = ch.y + 18;
@@ -1277,7 +1340,7 @@
         damage *= ch.attackIndex === 3 ? 1.45 : 1.12;
         effectColor = "#ff7a3d";
         const x = ch.facing === 1 ? ch.x + ch.w - 2 : ch.x - hbW + 2;
-        createHitbox("player", x, baseY, hbW, hbH, Math.round(damage), 8, ch.attackIndex === 3 ? "pyro" : null, 6, effectColor);
+        createHitbox("player", x, baseY, hbW, hbH, Math.round(damage), 8, ch.attackIndex === 3 ? "pyro" : null, 6, effectColor, 4);
         spawnParticle(ch.x + ch.w / 2 + ch.facing * 34, ch.y + 30, effectColor, 14, 1.8, 3.0);
       }
 
@@ -1287,7 +1350,7 @@
           hbH = 26;
           damage *= 1.06;
           const x = ch.facing === 1 ? ch.x + ch.w - 2 : ch.x - hbW + 2;
-          createHitbox("player", x, baseY, hbW, hbH, Math.round(damage), 8, null, 6, "#9fdcff");
+          createHitbox("player", x, baseY, hbW, hbH, Math.round(damage), 8, null, 6, "#9fdcff", 4);
           spawnParticle(ch.x + ch.w / 2 + ch.facing * 30, ch.y + 26, "#4ca8ff", 10, 1.4, 2.4);
         } else {
           projectiles.push({
@@ -1301,7 +1364,8 @@
             life: 60,
             element: "hydro",
             color: "#4ca8ff",
-            trail: true
+            trail: true,
+            energyGain: 4
           });
           spawnParticle(ch.x + ch.w / 2, ch.y + 24, "#4ca8ff", 14, 1.6, 2.6);
         }
@@ -1312,7 +1376,7 @@
         hbH = 30;
         damage *= ch.attackIndex === 2 ? 1.22 : 1.08;
         const x = ch.facing === 1 ? ch.x + ch.w - 2 : ch.x - hbW + 2;
-        createHitbox("player", x, baseY, hbW, hbH, Math.round(damage), 8, ch.attackIndex === 2 ? "electro" : null, 6, "#b07cff");
+        createHitbox("player", x, baseY, hbW, hbH, Math.round(damage), 8, ch.attackIndex === 2 ? "electro" : null, 6, "#b07cff", 4);
         spawnParticle(ch.x + ch.w / 2 + ch.facing * 32, ch.y + 28, "#b07cff", 15, 2.0, 3.4);
       }
 
@@ -1321,17 +1385,17 @@
         hbH = 30;
         damage *= ch.attackIndex === 3 ? 1.34 : 1.08;
         const x = ch.facing === 1 ? ch.x + ch.w - 2 : ch.x - hbW + 2;
-        createHitbox("player", x, baseY, hbW, hbH, Math.round(damage), 8, ch.attackIndex === 3 ? "cryo" : null, 6, "#8de7ff");
+        createHitbox("player", x, baseY, hbW, hbH, Math.round(damage), 8, ch.attackIndex === 3 ? "cryo" : null, 6, "#8de7ff", 4);
         spawnParticle(ch.x + ch.w / 2 + ch.facing * 30, ch.y + 26, "#8de7ff", 12, 1.6, 2.8);
       }
 
       ch.vx += ch.facing * 0.5;
-      ch.energy = clamp(ch.energy + 4, 0, 100);
     }
 
     function performChargedAttack(ch) {
       if (ch.attackTimer > 0 || ch.dodgeTimer > 0 || ch.stamina < 18) return;
       ch.attackTimer = 28;
+      ch.spriteActionTimer = Math.max(ch.spriteActionTimer || 0, 22);
       ch.stamina -= 18;
 
       const hbW = 116;
@@ -1344,19 +1408,19 @@
       spawnDamageText(ch.x + ch.w / 2, ch.y - 6, "重撃", "#ffe9a6", 0.95, 92);
 
       ch.vx += ch.facing * 1.8;
-      ch.energy = clamp(ch.energy + 8, 0, 100);
       addLog(`${ch.name}：重撃`);
     }
 
     function castSkill(ch) {
       if (ch.skillCd > 0 || ch.dodgeTimer > 0) return;
       ch.skillCd = ch.skillCdMax;
+      ch.spriteActionTimer = Math.max(ch.spriteActionTimer || 0, 28);
 
       if (ch.element === "pyro") {
         const hbW = 96, hbH = 54;
         const x = ch.facing === 1 ? ch.x + ch.w : ch.x - hbW;
         const y = ch.y + 8;
-        createHitbox("player", x, y, hbW, hbH, Math.round(ch.attack * 2.2), 16, "pyro", 10);
+        createHitbox("player", x, y, hbW, hbH, Math.round(ch.attack * 2.2), 16, "pyro", 10, null, 10);
         spawnParticle(x + hbW / 2, y + hbH / 2, "#ff7a3d", 26, 1.8, 4.4);
       }
 
@@ -1373,7 +1437,8 @@
           life: 90,
           element: "hydro",
           color: "#4ca8ff",
-          trail: true
+          trail: true,
+          energyGain: 10
         });
         spawnParticle(ch.x + ch.w / 2, ch.y + 22, "#4ca8ff", 20, 1.3, 3.5);
       }
@@ -1383,7 +1448,7 @@
         const hbW = 84, hbH = 48;
         const x = ch.facing === 1 ? ch.x + ch.w : ch.x - hbW;
         const y = ch.y + 12;
-        createHitbox("player", x, y, hbW, hbH, Math.round(ch.attack * 2.0), 10, "electro", 14);
+        createHitbox("player", x, y, hbW, hbH, Math.round(ch.attack * 2.0), 10, "electro", 14, null, 10);
         spawnParticle(x + hbW / 2, y + hbH / 2, "#b07cff", 28, 2.1, 4.7);
       }
 
@@ -1400,28 +1465,33 @@
             life: 88,
             element: "cryo",
             color: "#8de7ff",
-            trail: true
+            trail: true,
+            energyGain: 10
           });
         }
         spawnParticle(ch.x + ch.w / 2, ch.y + 25, "#8de7ff", 22, 1.8, 3.3);
       }
 
       addLog(`${ch.name}：${ch.skillName}`);
-      ch.energy = clamp(ch.energy + 12, 0, 100);
     }
 
     function castBurst(ch) {
       if (ch.energy < ch.burstCost || ch.dodgeTimer > 0 || !enemy) return;
       ch.energy = 0;
+      ch.spriteActionTimer = Math.max(ch.spriteActionTimer || 0, 36);
       addLog(`${ch.name}：${ch.burstName}`);
 
       if (ch.element === "pyro") {
+        const cx = enemy.x + enemy.w / 2;
+        const cy = groundY() - 54;
+        const r = 66;
         fields.push({
-          x: enemy.x - 40, y: groundY() - 100, w: 180, h: 100,
-          life: 180, tick: 0, damage: Math.round(ch.attack * 1.1),
-          element: "pyro", type: "burstField", color: "rgba(255,122,61,0.28)"
+          x: cx - r, y: cy - r, w: r * 2, h: r * 2,
+          cx, cy, r,
+          life: 180, tick: 0, damage: Math.round(ch.attack * 1.05),
+          element: "pyro", type: "pyroTornado", color: "rgba(255,122,61,0.22)"
         });
-        spawnParticle(enemy.x + enemy.w / 2, enemy.y + enemy.h / 2, "#ff7a3d", 70, 2.6, 5.2);
+        spawnParticle(cx, cy - 24, "#ff7a3d", 90, 2.8, 5.6);
       }
 
       if (ch.element === "hydro") {
@@ -1573,12 +1643,16 @@
 
       const moveSpeed = ch.speed;
 
+      const moveMag = input.moveIntensity;
+      ch.moveInputMag = moveMag;
+      const accel = moveMag < 0.5 ? 0.72 : 0.84;
+
       if (input.moveX < -0.12) {
-        ch.vx -= 0.8 * Math.abs(input.moveX);
+        ch.vx -= accel * moveMag;
         ch.facing = -1;
       }
       if (input.moveX > 0.12) {
-        ch.vx += 0.8 * Math.abs(input.moveX);
+        ch.vx += accel * moveMag;
         ch.facing = 1;
       }
 
@@ -1586,6 +1660,7 @@
         if (ch.onGround) {
           ch.vy = -12.6;
           ch.onGround = false;
+          ch.jumpFrameTimer = 4;
           spawnParticle(ch.x + ch.w / 2, ch.y + ch.h, "#dbe4ff", 10, 1.2, 2.0);
         }
       }
@@ -1609,6 +1684,8 @@
       if (ch.hitFlash > 0) ch.hitFlash--;
       if (ch.dodgeTimer > 0) ch.dodgeTimer--;
       if (ch.switchInvuln > 0) ch.switchInvuln--;
+      if (ch.spriteActionTimer > 0) ch.spriteActionTimer--;
+      if (ch.jumpFrameTimer > 0) ch.jumpFrameTimer--;
 
       if (ch.dodgeTimer <= 0) {
         ch.vx = clamp(ch.vx, -moveSpeed, moveSpeed);
@@ -1690,15 +1767,6 @@
           spawnParticle(enemy.x + enemy.w / 2, enemy.y + 52, enemy.accentColor, 30, 1.7, 4.4);
         }
 
-        if (enemy.summonCd <= 0) {
-          enemy.summonCd = 420;
-          const auraArr = ["pyro", "hydro", "electro", "cryo"];
-          const picked = auraArr[Math.floor(Math.random() * auraArr.length)];
-          enemy.elementAura = picked;
-          enemy.auraTimer = 260;
-          spawnParticle(enemy.x + enemy.w / 2, enemy.y + 18, elementColor(picked), 28, 1.9, 4.0);
-          spawnDamageText(enemy.x + enemy.w / 2, enemy.y - 4, `${elementName(picked)}付着`, elementColor(picked), 0.9, 98);
-        }
       }
 
       enemy.vy += GRAVITY;
@@ -1719,7 +1787,7 @@
           const enemyRect = { x: enemy.x, y: enemy.y, w: enemy.w, h: enemy.h };
           if (rectsHit(hb, enemyRect) && !hb.hitSet.has("enemy")) {
             hb.hitSet.add("enemy");
-            dealDamageToEnemy(hb.damage, hb.element, enemy.x + enemy.w / 2, enemy.y + 34);
+            dealDamageToEnemy(hb.damage, hb.element, enemy.x + enemy.w / 2, enemy.y + 34, hb.energyGain || 0);
           }
         }
 
@@ -1767,7 +1835,7 @@
             p.y - p.r < enemy.y + enemy.h
           );
           if (hitEnemy) {
-            dealDamageToEnemy(p.damage, p.element, p.x, p.y);
+            dealDamageToEnemy(p.damage, p.element, p.x, p.y, p.energyGain || 0);
             spawnParticle(p.x, p.y, p.color, 16, 1.7, 3.5);
             remove = true;
           }
@@ -1806,15 +1874,42 @@
         f.life--;
         f.tick++;
 
+        if (f.type === "pyroTornado") {
+          if (enemy && enemy.hp > 0) {
+            const tx = enemy.x + enemy.w / 2;
+            const ty = groundY() - 54;
+            f.cx += (tx - f.cx) * 0.13;
+            f.cy += (ty - f.cy) * 0.11;
+          }
+          f.x = f.cx - f.r;
+          f.y = f.cy - f.r;
+          f.w = f.r * 2;
+          f.h = f.r * 2;
+        }
+
         if (enemy && enemy.hp > 0) {
           const enemyRect = { x: enemy.x, y: enemy.y, w: enemy.w, h: enemy.h };
           if (rectsHit(f, enemyRect)) {
-            if (f.tick % 18 === 0) dealDamageToEnemy(f.damage, f.element, enemy.x + enemy.w / 2, enemy.y + 18);
+            const tickRate = f.type === "pyroTornado" ? 10 : 18;
+            if (f.tick % tickRate === 0) dealDamageToEnemy(f.damage, f.element, enemy.x + enemy.w / 2, enemy.y + 18);
             if (f.type === "freezeStorm" && f.tick % 22 === 0) enemy.vx *= 0.55;
           }
         }
 
-        if (Math.random() < 0.65) {
+        if (f.type === "pyroTornado" && Math.random() < 0.9) {
+          const ang = Math.random() * Math.PI * 2;
+          const rr = rand(f.r * 0.2, f.r * 0.95);
+          particles.push({
+            x: f.cx + Math.cos(ang) * rr,
+            y: f.cy + Math.sin(ang) * rr * 0.85,
+            vx: Math.cos(ang + Math.PI / 2) * rand(1.2, 2.2),
+            vy: -rand(1.1, 2.3),
+            life: rand(16, 30),
+            maxLife: 30,
+            size: rand(3, 6),
+            color: Math.random() < 0.45 ? "#ffd28f" : "#ff7a3d"
+          });
+        } else if (Math.random() < 0.65) {
           particles.push({
             x: rand(f.x, f.x + f.w),
             y: rand(f.y, f.y + f.h),
@@ -1860,6 +1955,15 @@
         party[i].x = ch.x;
         party[i].y = ch.y;
         party[i].facing = ch.facing;
+      }
+    }
+
+    function updateInactivePartyCooldowns() {
+      for (let i = 0; i < party.length; i++) {
+        if (i === activeIndex) continue;
+        const c = party[i];
+        if (!c || c.hp <= 0) continue;
+        if (c.skillCd > 0) c.skillCd--;
       }
     }
 
@@ -1980,12 +2084,34 @@
         const px = sx(p.x);
         if (px + p.w < -60 || px > VIEW_W() + 60) continue;
 
-        ctx.fillStyle = "rgba(52, 64, 110, 0.88)";
-        ctx.fillRect(px, p.y, p.w, p.h);
-        ctx.fillStyle = "rgba(255,255,255,0.08)";
-        ctx.fillRect(px, p.y, p.w, 6);
-        ctx.strokeStyle = "rgba(255,255,255,0.08)";
-        ctx.strokeRect(px, p.y, p.w, p.h);
+        const rock = ctx.createLinearGradient(px, p.y, px, p.y + p.h);
+        rock.addColorStop(0, "rgba(94,112,156,0.92)");
+        rock.addColorStop(0.18, "rgba(76,90,136,0.90)");
+        rock.addColorStop(1, "rgba(43,52,84,0.95)");
+        ctx.fillStyle = rock;
+        ctx.beginPath();
+        ctx.moveTo(px, p.y + 4);
+        ctx.lineTo(px + p.w, p.y + 4);
+        ctx.lineTo(px + p.w - 8, p.y + p.h);
+        ctx.lineTo(px + 6, p.y + p.h);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.fillStyle = "rgba(215,232,255,0.20)";
+        ctx.fillRect(px + 2, p.y, p.w - 4, 6);
+        ctx.strokeStyle = "rgba(255,255,255,0.14)";
+        ctx.lineWidth = 1.2;
+        ctx.strokeRect(px + 1, p.y + 1, p.w - 2, p.h - 2);
+
+        ctx.strokeStyle = "rgba(20,24,38,0.28)";
+        ctx.lineWidth = 1;
+        for (let i = 0; i < 3; i++) {
+          const cy = p.y + 12 + i * (p.h / 4);
+          ctx.beginPath();
+          ctx.moveTo(px + 8 + i * 4, cy);
+          ctx.lineTo(px + p.w - 12 - i * 5, cy + rand(-2, 2));
+          ctx.stroke();
+        }
       }
 
       for (let i = 0; i < 16; i++) {
@@ -2017,43 +2143,92 @@
       ctx.fill();
 
       if (isActive) {
-        ctx.strokeStyle = ch.color;
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.arc(px + ch.w / 2, ch.y + ch.h / 2, 34 + Math.sin(Date.now() * 0.01) * 2, 0, Math.PI * 2);
-        ctx.stroke();
+        if (ch.element === "pyro") {
+          const cx = px + ch.w / 2;
+          const cy = ch.y + ch.h / 2;
+          const t = Date.now() * 0.012;
+          const grd = ctx.createRadialGradient(cx, cy, 8, cx, cy, 48);
+          grd.addColorStop(0, "rgba(255,246,215,0.42)");
+          grd.addColorStop(0.4, "rgba(255,160,88,0.26)");
+          grd.addColorStop(1, "rgba(255,102,58,0.04)");
+          ctx.fillStyle = grd;
+          ctx.beginPath();
+          ctx.arc(cx, cy, 46, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.strokeStyle = "rgba(255,172,88,0.86)";
+          ctx.lineWidth = 2;
+          for (let i = 0; i < 3; i++) {
+            ctx.beginPath();
+            const phase = t + i * 2.1;
+            for (let s = 0; s <= 10; s++) {
+              const p = s / 10;
+              const ang = phase + p * Math.PI * 1.7;
+              const rr = 20 + p * 20 + Math.sin(phase + p * 6) * 2;
+              const fx = cx + Math.cos(ang) * rr;
+              const fy = cy + Math.sin(ang) * rr * 0.62 - p * 9;
+              if (s === 0) ctx.moveTo(fx, fy);
+              else ctx.lineTo(fx, fy);
+            }
+            ctx.stroke();
+          }
+        } else {
+          ctx.strokeStyle = ch.color;
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.arc(px + ch.w / 2, ch.y + ch.h / 2, 34 + Math.sin(Date.now() * 0.01) * 2, 0, Math.PI * 2);
+          ctx.stroke();
+        }
       }
 
       ctx.translate(px + ch.w / 2, ch.y + ch.h / 2);
-      ctx.scale(ch.facing, 1);
+      if (ch.element === "pyro") {
+        const frame = getHinoFrame(ch);
+        const img = hinoSprites[frame];
+        const scaleX = ch.facing === 1 ? -1 : 1;
+        ctx.scale(scaleX, 1);
 
-      ctx.fillStyle = ch.hitFlash > 0 ? "#fff4f4" : ch.color;
-      ctx.fillRect(-12, -10, 24, 34);
+        if (!img || !img.complete || img.naturalWidth <= 0) {
+          ctx.restore();
+          return;
+        }
+        const isAttackFrame = frame === 6;
+        const drawH = Math.round(ch.h * (isAttackFrame ? 1.66 : 1.36));
+        const drawW = Math.round(ch.w * (isAttackFrame ? 2.9 : 2.35));
+        ctx.imageSmoothingEnabled = true;
+        if (ch.hitFlash > 0) {
+          ctx.globalAlpha *= 0.82;
+        }
+        ctx.drawImage(img, -drawW / 2, -drawH / 2 + 8, drawW, drawH);
+      } else {
+        ctx.scale(ch.facing, 1);
 
-      ctx.beginPath();
-      ctx.arc(0, -24, 14, 0, Math.PI * 2);
-      ctx.fillStyle = ch.hitFlash > 0 ? "#fff7f7" : ch.secondary;
-      ctx.fill();
+        ctx.fillStyle = ch.hitFlash > 0 ? "#fff4f4" : ch.color;
+        ctx.fillRect(-12, -10, 24, 34);
 
-      ctx.strokeStyle = ch.hitFlash > 0 ? "#fff5f5" : ch.secondary;
-      ctx.lineWidth = 6;
-      ctx.beginPath();
-      ctx.moveTo(-10, -4);
-      if (ch.attackTimer > 12 && ch.element === "pyro") ctx.lineTo(-24, 8);
-      else ctx.lineTo(-20, 10);
-      ctx.moveTo(10, -4);
-      if (ch.attackTimer > 12 && ch.element === "electro") ctx.lineTo(24, 4);
-      else ctx.lineTo(20, 10);
-      ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(0, -24, 14, 0, Math.PI * 2);
+        ctx.fillStyle = ch.hitFlash > 0 ? "#fff7f7" : ch.secondary;
+        ctx.fill();
 
-      ctx.strokeStyle = ch.color;
-      ctx.lineWidth = 7;
-      ctx.beginPath();
-      ctx.moveTo(-6, 24);
-      ctx.lineTo(-10, 42);
-      ctx.moveTo(6, 24);
-      ctx.lineTo(10, 42);
-      ctx.stroke();
+        ctx.strokeStyle = ch.hitFlash > 0 ? "#fff5f5" : ch.secondary;
+        ctx.lineWidth = 6;
+        ctx.beginPath();
+        ctx.moveTo(-10, -4);
+        ctx.lineTo(-20, 10);
+        ctx.moveTo(10, -4);
+        if (ch.attackTimer > 12 && ch.element === "electro") ctx.lineTo(24, 4);
+        else ctx.lineTo(20, 10);
+        ctx.stroke();
+
+        ctx.strokeStyle = ch.color;
+        ctx.lineWidth = 7;
+        ctx.beginPath();
+        ctx.moveTo(-6, 24);
+        ctx.lineTo(-10, 42);
+        ctx.moveTo(6, 24);
+        ctx.lineTo(10, 42);
+        ctx.stroke();
+      }
 
       if (ch.attackTimer > 12) {
         if (ch.element === "pyro") {
@@ -2112,15 +2287,116 @@
       ctx.fill();
 
       if (enemy.elementAura) {
-        ctx.strokeStyle = elementColor(enemy.elementAura);
-        ctx.lineWidth = 3;
+        if (enemy.elementAura === "pyro") {
+          const cx = px + enemy.w / 2;
+          const cy = enemy.y + 40;
+          const t = Date.now() * 0.01;
+          const core = 42 + Math.sin(t * 1.6) * 2;
+          const grd = ctx.createRadialGradient(cx, cy, 8, cx, cy, core + 20);
+          grd.addColorStop(0, "rgba(255,250,215,0.72)");
+          grd.addColorStop(0.35, "rgba(255,166,96,0.46)");
+          grd.addColorStop(1, "rgba(255,110,52,0.05)");
+          ctx.fillStyle = grd;
+          ctx.beginPath();
+          ctx.arc(cx, cy, core + 20, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.strokeStyle = "rgba(255,176,112,0.86)";
+          ctx.lineWidth = 2.5;
+          for (let i = 0; i < 4; i++) {
+            ctx.beginPath();
+            const phase = t + i * 1.5;
+            for (let s = 0; s <= 14; s++) {
+              const p = s / 14;
+              const ang = phase + p * Math.PI * 1.9;
+              const rr = 24 + p * 34 + Math.sin(phase * 1.8 + p * 5) * 3;
+              const fx = cx + Math.cos(ang) * rr;
+              const fy = cy + Math.sin(ang) * rr * 0.6 - p * 16;
+              if (s === 0) ctx.moveTo(fx, fy);
+              else ctx.lineTo(fx, fy);
+            }
+            ctx.stroke();
+          }
+        } else {
+          ctx.strokeStyle = elementColor(enemy.elementAura);
+          ctx.lineWidth = 3;
+          ctx.beginPath();
+          ctx.arc(px + enemy.w / 2, enemy.y + 40, 50 + Math.sin(Date.now() * 0.009) * 3, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+      }
+
+      if (enemy.bodyType === "dragon") {
+        const ax = px + enemy.w / 2;
+        const ay = enemy.y + enemy.h / 2 - 6;
+        const auraPulse = 62 + Math.sin(Date.now() * 0.007) * 6;
+        const aura = ctx.createRadialGradient(ax, ay, 10, ax, ay, auraPulse);
+        aura.addColorStop(0, "rgba(220,188,255,0.18)");
+        aura.addColorStop(0.55, "rgba(132,94,182,0.14)");
+        aura.addColorStop(1, "rgba(68,38,96,0.02)");
+        ctx.fillStyle = aura;
         ctx.beginPath();
-        ctx.arc(px + enemy.w / 2, enemy.y + 40, 50 + Math.sin(Date.now() * 0.009) * 3, 0, Math.PI * 2);
-        ctx.stroke();
+        ctx.arc(ax, ay, auraPulse, 0, Math.PI * 2);
+        ctx.fill();
       }
 
       ctx.translate(px + enemy.w / 2, enemy.y + enemy.h / 2);
       ctx.scale(enemy.facing, 1);
+
+      if (enemy.bodyType === "shadowKnight") {
+        const plate = enemy.hurtFlash > 0 ? "#f6f8ff" : enemy.baseColor;
+        const trim = enemy.hurtFlash > 0 ? "#fff4e8" : enemy.accentColor;
+        ctx.fillStyle = plate;
+        ctx.beginPath();
+        ctx.moveTo(-24, 34);
+        ctx.lineTo(-30, -8);
+        ctx.lineTo(-18, -28);
+        ctx.lineTo(18, -28);
+        ctx.lineTo(30, -8);
+        ctx.lineTo(24, 34);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.fillStyle = trim;
+        ctx.beginPath();
+        ctx.arc(0, -40, 18, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = "#171a27";
+        ctx.beginPath();
+        ctx.moveTo(-10, -42);
+        ctx.lineTo(10, -42);
+        ctx.lineTo(12, -28);
+        ctx.lineTo(-12, -28);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.strokeStyle = enemy.hornColor;
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.moveTo(-12, -58); ctx.lineTo(-24, -78);
+        ctx.moveTo(12, -58); ctx.lineTo(24, -78);
+        ctx.stroke();
+
+        ctx.strokeStyle = "rgba(255,180,120,0.9)";
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.moveTo(-6, -36); ctx.lineTo(-1, -34);
+        ctx.moveTo(6, -36); ctx.lineTo(1, -34);
+        ctx.stroke();
+
+        ctx.fillStyle = "rgba(32,38,58,0.95)";
+        ctx.beginPath();
+        ctx.moveTo(-34, 6);
+        ctx.lineTo(-48, 20);
+        ctx.lineTo(-34, 26);
+        ctx.closePath();
+        ctx.moveTo(34, 6);
+        ctx.lineTo(48, 20);
+        ctx.lineTo(34, 26);
+        ctx.closePath();
+        ctx.fill();
+      }
 
       if (enemy.bodyType === "beast") {
         ctx.fillStyle = enemy.hurtFlash > 0 ? "#fff2f2" : enemy.baseColor;
@@ -2139,17 +2415,51 @@
         ctx.stroke();
       }
 
-      if (enemy.bodyType === "robot") {
-        ctx.fillStyle = enemy.hurtFlash > 0 ? "#eef8ff" : enemy.baseColor;
-        ctx.fillRect(-28, -28, 56, 78);
+      if (enemy.bodyType === "leviathan") {
+        const bodyColor = enemy.hurtFlash > 0 ? "#eaf8ff" : enemy.baseColor;
+
+        ctx.fillStyle = bodyColor;
+        ctx.beginPath();
+        ctx.ellipse(-2, 2, 38, 24, 0.1, 0, Math.PI * 2);
+        ctx.fill();
+
         ctx.fillStyle = enemy.accentColor;
-        ctx.fillRect(-14, -48, 28, 20);
-        ctx.fillStyle = "#ffffff";
-        ctx.fillRect(-10, -44, 6, 6);
-        ctx.fillRect(4, -44, 6, 6);
+        ctx.beginPath();
+        ctx.ellipse(22, -10, 24, 14, -0.2, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = "rgba(215, 246, 255, 0.92)";
+        ctx.beginPath();
+        ctx.arc(30, -13, 5, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = "#0e2a47";
+        ctx.beginPath();
+        ctx.arc(31, -13, 2, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = bodyColor;
+        ctx.beginPath();
+        ctx.moveTo(-40, -4);
+        ctx.quadraticCurveTo(-58, -24, -68, -8);
+        ctx.quadraticCurveTo(-58, 6, -42, 8);
+        ctx.closePath();
+        ctx.fill();
+
         ctx.strokeStyle = enemy.hornColor;
-        ctx.lineWidth = 3;
-        ctx.strokeRect(-28, -28, 56, 78);
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.moveTo(20, -24); ctx.quadraticCurveTo(34, -46, 40, -28);
+        ctx.moveTo(6, -24); ctx.quadraticCurveTo(16, -48, 24, -30);
+        ctx.stroke();
+
+        ctx.fillStyle = "rgba(185, 238, 255, 0.82)";
+        ctx.beginPath();
+        ctx.moveTo(-8, 10);
+        ctx.quadraticCurveTo(-20, 32, 0, 30);
+        ctx.quadraticCurveTo(14, 24, 8, 8);
+        ctx.closePath();
+        ctx.fill();
       }
 
       if (enemy.bodyType === "brute") {
@@ -2167,12 +2477,91 @@
         ctx.stroke();
       }
 
-      ctx.strokeStyle = enemy.baseColor;
-      ctx.lineWidth = 10;
-      ctx.beginPath();
-      ctx.moveTo(-20, 32); ctx.lineTo(-24, 60);
-      ctx.moveTo(20, 32); ctx.lineTo(24, 60);
-      ctx.stroke();
+      if (enemy.bodyType === "dragon") {
+        const body = enemy.hurtFlash > 0 ? "#f5ebff" : enemy.baseColor;
+        const trim = enemy.hurtFlash > 0 ? "#fff9ff" : enemy.accentColor;
+
+        ctx.fillStyle = body;
+        ctx.beginPath();
+        ctx.ellipse(-4, 4, 44, 34, 0.04, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = body;
+        ctx.beginPath();
+        ctx.ellipse(34, -8, 28, 20, -0.14, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = trim;
+        for (let i = 0; i < 9; i++) {
+          const t = i / 8;
+          const sx = -34 + t * 58;
+          const sy = -20 - Math.sin(t * Math.PI) * 10;
+          ctx.beginPath();
+          ctx.moveTo(sx, sy);
+          ctx.lineTo(sx + 8, sy - 9);
+          ctx.lineTo(sx + 15, sy - 1);
+          ctx.closePath();
+          ctx.fill();
+        }
+
+        ctx.fillStyle = "rgba(28,18,38,0.96)";
+        ctx.beginPath();
+        ctx.arc(44, -10, 4, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.strokeStyle = enemy.hornColor;
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.moveTo(42, -24); ctx.quadraticCurveTo(56, -48, 64, -30);
+        ctx.moveTo(26, -24); ctx.quadraticCurveTo(34, -50, 44, -32);
+        ctx.stroke();
+
+        ctx.strokeStyle = trim;
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(-44, -4);
+        ctx.quadraticCurveTo(-78, -22, -88, -8);
+        ctx.quadraticCurveTo(-74, 8, -46, 12);
+        ctx.stroke();
+
+        ctx.fillStyle = "rgba(52,36,70,0.92)";
+        ctx.beginPath();
+        ctx.moveTo(-18, 14);
+        ctx.quadraticCurveTo(-36, 42, -8, 36);
+        ctx.quadraticCurveTo(10, 26, 2, 10);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.beginPath();
+        ctx.moveTo(18, 16);
+        ctx.quadraticCurveTo(6, 40, 30, 34);
+        ctx.quadraticCurveTo(50, 24, 38, 10);
+        ctx.closePath();
+        ctx.fill();
+      }
+
+      if (enemy.bodyType === "leviathan") {
+        ctx.strokeStyle = enemy.baseColor;
+        ctx.lineWidth = 8;
+        ctx.beginPath();
+        ctx.moveTo(-10, 20); ctx.quadraticCurveTo(-28, 38, -38, 56);
+        ctx.moveTo(6, 22); ctx.quadraticCurveTo(14, 40, 10, 60);
+        ctx.stroke();
+      } else if (enemy.bodyType === "dragon") {
+        ctx.strokeStyle = enemy.baseColor;
+        ctx.lineWidth = 8;
+        ctx.beginPath();
+        ctx.moveTo(-18, 26); ctx.quadraticCurveTo(-12, 56, -4, 68);
+        ctx.moveTo(12, 26); ctx.quadraticCurveTo(22, 54, 28, 68);
+        ctx.stroke();
+      } else {
+        ctx.strokeStyle = enemy.baseColor;
+        ctx.lineWidth = 10;
+        ctx.beginPath();
+        ctx.moveTo(-20, 32); ctx.lineTo(-24, 60);
+        ctx.moveTo(20, 32); ctx.lineTo(24, 60);
+        ctx.stroke();
+      }
 
       ctx.restore();
 
@@ -2255,11 +2644,42 @@
         const px = sx(f.x);
         if (px + f.w < -80 || px > VIEW_W() + 80) continue;
         ctx.save();
-        ctx.fillStyle = f.color;
-        ctx.fillRect(px, f.y, f.w, f.h);
-        ctx.strokeStyle = elementColor(f.element);
-        ctx.lineWidth = 2;
-        ctx.strokeRect(px, f.y, f.w, f.h);
+        if (f.type === "pyroTornado") {
+          const cpx = sx(f.cx);
+          const t = f.tick * 0.12;
+          const flameR = f.r * (0.82 + Math.sin(t) * 0.05);
+          const grd = ctx.createRadialGradient(cpx, f.cy, 8, cpx, f.cy, flameR);
+          grd.addColorStop(0, "rgba(255,248,214,0.78)");
+          grd.addColorStop(0.35, "rgba(255,170,90,0.62)");
+          grd.addColorStop(1, "rgba(255,98,40,0.12)");
+          ctx.fillStyle = grd;
+          ctx.beginPath();
+          ctx.arc(cpx, f.cy, flameR, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.strokeStyle = "rgba(255,188,112,0.88)";
+          ctx.lineWidth = 3;
+          for (let k = 0; k < 3; k++) {
+            ctx.beginPath();
+            const phase = t + k * 2.1;
+            for (let s = 0; s <= 10; s++) {
+              const p = s / 10;
+              const a = phase + p * Math.PI * 2;
+              const rr = f.r * (0.26 + p * 0.58 + Math.sin(phase + p * 6) * 0.05);
+              const x = cpx + Math.cos(a) * rr;
+              const y = f.cy - f.r * 0.7 + p * f.r * 1.45 + Math.sin(a * 1.8) * 5;
+              if (s === 0) ctx.moveTo(x, y);
+              else ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+          }
+        } else {
+          ctx.fillStyle = f.color;
+          ctx.fillRect(px, f.y, f.w, f.h);
+          ctx.strokeStyle = elementColor(f.element);
+          ctx.lineWidth = 2;
+          ctx.strokeRect(px, f.y, f.w, f.h);
+        }
         ctx.restore();
       }
     }
@@ -2307,12 +2727,16 @@
           input.switchTo = i;
         });
 
-        const hpPercent = clamp((c.hp / c.maxHp) * 100, 0, 100);
+        const hpRatio = clamp(c.hp / c.maxHp, 0, 1);
+        const hpPercent = hpRatio * 100;
+        const ringColor = hpRatio <= 0.2 ? "#ff5757" : "#5dff9d";
+        const faceHtml = c.element === "pyro"
+          ? `<img class="partyFaceImg" src="hino_1.png" alt="${c.name} icon">`
+          : `<div class="faceHead"></div><div class="faceBody" style="background:${c.color};"></div>`;
         btn.innerHTML = `
-          <div class="partyHpRing" style="--hpdeg:${hpPercent}%"></div>
+          <div class="partyHpRing" style="--hpdeg:${hpPercent}%; --ringColor:${ringColor};"></div>
           <div class="partyFace">
-            <div class="faceHead"></div>
-            <div class="faceBody" style="background:${c.color};"></div>
+            ${faceHtml}
           </div>
           <div class="partyShortName">${c.short}</div>
         `;
@@ -2327,6 +2751,10 @@
       playerHpFill.style.width = ((ch.hp / ch.maxHp) * 100) + "%";
       playerHpText.textContent = `${Math.ceil(ch.hp)} / ${ch.maxHp}`;
       playerStaminaFill.style.width = ch.stamina + "%";
+      const hpRatio = ch.hp / ch.maxHp;
+      playerHpFill.style.background = hpRatio <= 0.2
+        ? "linear-gradient(90deg, #ff4040, #ff9a9a)"
+        : "linear-gradient(90deg, #2edb85, #88ffbd)";
 
       renderPartySwitchBar();
       updateBurstVisual();
@@ -2343,6 +2771,7 @@
       if (!bigMessage.classList.contains("show")) {
         if (ch && ch.hp > 0 && enemiesDefeated < 3) {
           updatePlayer(ch);
+          updateInactivePartyCooldowns();
           updateEnemy();
           updateHitboxes();
           updateProjectiles();
