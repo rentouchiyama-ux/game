@@ -314,9 +314,9 @@
     }
 
     #btnAttack {
-      width: 64px;   /* 前回96 → 約2/3 */
-      height: 64px;
-      right: 0;
+      width: 70px;
+      height: 70px;
+      right: 6px;
       bottom: 8px;
       font-size: 13px;
       background:
@@ -347,10 +347,10 @@
     }
 
     #btnSkill {
-      width: 51px;   /* 前回76 → 約2/3 */
-      height: 51px;
-      right: 96px;
-      bottom: 52px;
+      width: 58px;
+      height: 58px;
+      right: 116px;
+      bottom: 58px;
       font-size: 10px;
       background:
         radial-gradient(circle at 30% 25%, rgba(255,255,255,0.10), rgba(255,255,255,0.03) 45%, rgba(0,0,0,0.10) 100%),
@@ -358,10 +358,10 @@
     }
 
     #btnBurst {
-      width: 60px;   /* 前回90 → 約2/3 */
-      height: 60px;
-      right: 24px;
-      bottom: 114px;
+      width: 66px;
+      height: 66px;
+      right: 28px;
+      bottom: 128px;
       font-size: 11px;
       background:
         radial-gradient(circle at 30% 25%, rgba(255,255,255,0.10), rgba(255,255,255,0.03) 45%, rgba(0,0,0,0.10) 100%),
@@ -400,10 +400,10 @@
     }
 
     #btnDodge {
-      width: 40px;   /* 前回60 → 約2/3 */
-      height: 40px;
-      right: 172px;
-      bottom: 8px;
+      width: 48px;
+      height: 48px;
+      right: 198px;
+      bottom: 10px;
       font-size: 9px;
       background:
         radial-gradient(circle at 30% 25%, rgba(255,255,255,0.10), rgba(255,255,255,0.03) 45%, rgba(0,0,0,0.10) 100%),
@@ -437,12 +437,13 @@
 
     #partySwitchBar {
       position: absolute;
-      left: 50%;
-      bottom: 16px;
-      transform: translateX(-50%);
+      left: 10px;
+      top: 50%;
+      transform: translateY(-50%);
       z-index: 22;
       display: flex;
-      gap: 10px;
+      flex-direction: column;
+      gap: 12px;
       pointer-events: auto;
       padding: 8px 10px;
       border-radius: 999px;
@@ -522,7 +523,7 @@
       inset: 2px;
       border-radius: 50%;
       pointer-events: none;
-      background: conic-gradient(#5dff9d var(--hpdeg, 100%), rgba(255,255,255,0.08) 0);
+      background: conic-gradient(var(--ringColor, #5dff9d) var(--hpdeg, 100%), rgba(255,255,255,0.08) 0);
       -webkit-mask: radial-gradient(circle, transparent 66%, black 68%);
               mask: radial-gradient(circle, transparent 66%, black 68%);
       opacity: 0.8;
@@ -1119,8 +1120,13 @@
         enemy = null;
         return;
       }
+      fields = [];
+      hitboxes = [];
+      projectiles = [];
       const spawnX = 2200 + currentEnemyIndex * 450;
       enemy = createEnemyFromTemplate(enemyTemplates[currentEnemyIndex], spawnX);
+      enemy.elementAura = null;
+      enemy.auraTimer = 0;
       addLog(`${enemy.name} 出現`);
     }
 
@@ -1763,15 +1769,6 @@
           spawnParticle(enemy.x + enemy.w / 2, enemy.y + 52, enemy.accentColor, 30, 1.7, 4.4);
         }
 
-        if (enemy.summonCd <= 0) {
-          enemy.summonCd = 420;
-          const auraArr = ["pyro", "hydro", "electro", "cryo"];
-          const picked = auraArr[Math.floor(Math.random() * auraArr.length)];
-          enemy.elementAura = picked;
-          enemy.auraTimer = 260;
-          spawnParticle(enemy.x + enemy.w / 2, enemy.y + 18, elementColor(picked), 28, 1.9, 4.0);
-          spawnDamageText(enemy.x + enemy.w / 2, enemy.y - 4, `${elementName(picked)}付着`, elementColor(picked), 0.9, 98);
-        }
       }
 
       enemy.vy += GRAVITY;
@@ -1963,6 +1960,15 @@
       }
     }
 
+    function updateInactivePartyCooldowns() {
+      for (let i = 0; i < party.length; i++) {
+        if (i === activeIndex) continue;
+        const c = party[i];
+        if (!c || c.hp <= 0) continue;
+        if (c.skillCd > 0) c.skillCd--;
+      }
+    }
+
     function updateCamera() {
       const ch = activeChar();
       if (!ch) return;
@@ -2080,12 +2086,34 @@
         const px = sx(p.x);
         if (px + p.w < -60 || px > VIEW_W() + 60) continue;
 
-        ctx.fillStyle = "rgba(52, 64, 110, 0.88)";
-        ctx.fillRect(px, p.y, p.w, p.h);
-        ctx.fillStyle = "rgba(255,255,255,0.08)";
-        ctx.fillRect(px, p.y, p.w, 6);
-        ctx.strokeStyle = "rgba(255,255,255,0.08)";
-        ctx.strokeRect(px, p.y, p.w, p.h);
+        const rock = ctx.createLinearGradient(px, p.y, px, p.y + p.h);
+        rock.addColorStop(0, "rgba(94,112,156,0.92)");
+        rock.addColorStop(0.18, "rgba(76,90,136,0.90)");
+        rock.addColorStop(1, "rgba(43,52,84,0.95)");
+        ctx.fillStyle = rock;
+        ctx.beginPath();
+        ctx.moveTo(px, p.y + 4);
+        ctx.lineTo(px + p.w, p.y + 4);
+        ctx.lineTo(px + p.w - 8, p.y + p.h);
+        ctx.lineTo(px + 6, p.y + p.h);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.fillStyle = "rgba(215,232,255,0.20)";
+        ctx.fillRect(px + 2, p.y, p.w - 4, 6);
+        ctx.strokeStyle = "rgba(255,255,255,0.14)";
+        ctx.lineWidth = 1.2;
+        ctx.strokeRect(px + 1, p.y + 1, p.w - 2, p.h - 2);
+
+        ctx.strokeStyle = "rgba(20,24,38,0.28)";
+        ctx.lineWidth = 1;
+        for (let i = 0; i < 3; i++) {
+          const cy = p.y + 12 + i * (p.h / 4);
+          ctx.beginPath();
+          ctx.moveTo(px + 8 + i * 4, cy);
+          ctx.lineTo(px + p.w - 12 - i * 5, cy + rand(-2, 2));
+          ctx.stroke();
+        }
       }
 
       for (let i = 0; i < 16; i++) {
@@ -2706,12 +2734,14 @@
           input.switchTo = i;
         });
 
-        const hpPercent = clamp((c.hp / c.maxHp) * 100, 0, 100);
+        const hpRatio = clamp(c.hp / c.maxHp, 0, 1);
+        const hpPercent = hpRatio * 100;
+        const ringColor = hpRatio <= 0.2 ? "#ff5757" : "#5dff9d";
         const faceHtml = c.element === "pyro"
           ? `<img class="partyFaceImg" src="hino_1.png" alt="${c.name} icon">`
           : `<div class="faceHead"></div><div class="faceBody" style="background:${c.color};"></div>`;
         btn.innerHTML = `
-          <div class="partyHpRing" style="--hpdeg:${hpPercent}%"></div>
+          <div class="partyHpRing" style="--hpdeg:${hpPercent}%; --ringColor:${ringColor};"></div>
           <div class="partyFace">
             ${faceHtml}
           </div>
@@ -2728,6 +2758,10 @@
       playerHpFill.style.width = ((ch.hp / ch.maxHp) * 100) + "%";
       playerHpText.textContent = `${Math.ceil(ch.hp)} / ${ch.maxHp}`;
       playerStaminaFill.style.width = ch.stamina + "%";
+      const hpRatio = ch.hp / ch.maxHp;
+      playerHpFill.style.background = hpRatio <= 0.2
+        ? "linear-gradient(90deg, #ff4040, #ff9a9a)"
+        : "linear-gradient(90deg, #2edb85, #88ffbd)";
 
       renderPartySwitchBar();
       updateBurstVisual();
@@ -2744,6 +2778,7 @@
       if (!bigMessage.classList.contains("show")) {
         if (ch && ch.hp > 0 && enemiesDefeated < 3) {
           updatePlayer(ch);
+          updateInactivePartyCooldowns();
           updateEnemy();
           updateHitboxes();
           updateProjectiles();
