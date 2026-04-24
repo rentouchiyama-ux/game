@@ -862,10 +862,12 @@
       let dy = clientY - joystickCenter.y;
       let len = Math.hypot(dx, dy);
 
-      const stickSize = joystickArea.offsetWidth || 96;
-      if (len > stickSize) {
-        joystickCenter.x = (joystickCenter.x + clientX) * 0.5;
-        joystickCenter.y = (joystickCenter.y + clientY) * 0.5;
+      if (len > maxLen * 1.5) {
+        const shift = len - maxLen;
+        const sxShift = dx / len * shift;
+        const syShift = dy / len * shift;
+        joystickCenter.x += sxShift;
+        joystickCenter.y += syShift;
         joystickArea.style.left = (joystickCenter.x - (joystickArea.offsetWidth || 96) / 2) + "px";
         joystickArea.style.top = (joystickCenter.y - (joystickArea.offsetHeight || 96) / 2) + "px";
         dx = clientX - joystickCenter.x;
@@ -1645,7 +1647,7 @@
 
       const moveMag = input.moveIntensity;
       ch.moveInputMag = moveMag;
-      const accel = moveMag < 0.5 ? 0.72 : 0.84;
+      const accel = moveMag < 0.45 ? 0.34 : 0.82;
 
       if (input.moveX < -0.12) {
         ch.vx -= accel * moveMag;
@@ -2187,18 +2189,23 @@
         const scaleX = ch.facing === 1 ? -1 : 1;
         ctx.scale(scaleX, 1);
 
-        if (!img || !img.complete || img.naturalWidth <= 0) {
-          ctx.restore();
-          return;
+        if (img && img.complete && img.naturalWidth > 0) {
+          const isAttackFrame = frame === 6;
+          const drawH = Math.round(ch.h * (isAttackFrame ? 1.6 : 1.36));
+          const drawW = Math.round(ch.w * (isAttackFrame ? 2.7 : 2.35));
+          ctx.imageSmoothingEnabled = true;
+          if (ch.hitFlash > 0) {
+            ctx.globalAlpha *= 0.82;
+          }
+          ctx.drawImage(img, -drawW / 2, -drawH / 2 + 8, drawW, drawH);
+        } else {
+          ctx.fillStyle = ch.hitFlash > 0 ? "#fff4f4" : ch.color;
+          ctx.fillRect(-12, -10, 24, 34);
+          ctx.beginPath();
+          ctx.arc(0, -24, 14, 0, Math.PI * 2);
+          ctx.fillStyle = ch.hitFlash > 0 ? "#fff7f7" : ch.secondary;
+          ctx.fill();
         }
-        const isAttackFrame = frame === 6;
-        const drawH = Math.round(ch.h * (isAttackFrame ? 1.66 : 1.36));
-        const drawW = Math.round(ch.w * (isAttackFrame ? 2.9 : 2.35));
-        ctx.imageSmoothingEnabled = true;
-        if (ch.hitFlash > 0) {
-          ctx.globalAlpha *= 0.82;
-        }
-        ctx.drawImage(img, -drawW / 2, -drawH / 2 + 8, drawW, drawH);
       } else {
         ctx.scale(ch.facing, 1);
 
