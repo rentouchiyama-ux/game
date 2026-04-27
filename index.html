@@ -738,11 +738,22 @@
     const skillCooldownText = document.getElementById("skillCooldownText");
 
     const hinoSprites = {};
+    const minaSprites = {};
+    const tekiSprites = {};
     for (let i = 1; i <= 8; i++) {
       const img = new Image();
       img.src = `hino_${i}.png`;
       hinoSprites[i] = img;
     }
+    for (let i = 1; i <= 9; i++) {
+      const img = new Image();
+      img.src = `mina_${i}.png`;
+      minaSprites[i] = img;
+    }
+    tekiSprites.idle = new Image();
+    tekiSprites.idle.src = "teki_1-1.png";
+    tekiSprites.attack = new Image();
+    tekiSprites.attack.src = "teki_1-2.png";
 
     function getHinoFrame(ch) {
       if (!ch.onGround) {
@@ -760,6 +771,17 @@
         return Math.floor(Date.now() / 170) % 2 === 0 ? 2 : 3;
       }
 
+      return 1;
+    }
+
+    function getMinaFrame(ch) {
+      if (!ch.onGround) return ch.vy < 0 ? 4 : 5;
+      if ((ch.spriteActionTimer || 0) > 0 || ch.attackTimer > 0) {
+        return Math.floor(Date.now() / 90) % 2 === 0 ? 6 : 7;
+      }
+      const inputMag = ch.moveInputMag || 0;
+      if (inputMag >= 0.5) return Math.floor(Date.now() / 120) % 2 === 0 ? 8 : 9;
+      if (inputMag > 0.12) return Math.floor(Date.now() / 170) % 2 === 0 ? 2 : 3;
       return 1;
     }
     const partySwitchBar = document.getElementById("partySwitchBar");
@@ -1323,6 +1345,15 @@
 
     function performNormalAttack(ch) {
       if (ch.attackTimer > 0 || ch.dodgeTimer > 0) return;
+
+      if (enemy && enemy.hp > 0) {
+        const dxToEnemy = (enemy.x + enemy.w / 2) - (ch.x + ch.w / 2);
+        const nearEnemy = Math.abs(dxToEnemy) < 320;
+        if (nearEnemy) {
+          const shouldFace = dxToEnemy >= 0 ? 1 : -1;
+          if (ch.facing !== shouldFace) ch.facing = shouldFace;
+        }
+      }
 
       ch.attackIndex = (ch.attackIndex % 3) + 1;
       ch.attackTimer = 20;
@@ -2183,29 +2214,25 @@
       }
 
       ctx.translate(px + ch.w / 2, ch.y + ch.h / 2);
-      if (ch.element === "pyro") {
-        const frame = getHinoFrame(ch);
-        const img = hinoSprites[frame];
+      if (ch.element === "pyro" || ch.element === "hydro") {
+        const isHino = ch.element === "pyro";
+        const frame = isHino ? getHinoFrame(ch) : getMinaFrame(ch);
+        const img = isHino ? hinoSprites[frame] : minaSprites[frame];
         const scaleX = ch.facing === 1 ? -1 : 1;
         ctx.scale(scaleX, 1);
 
-        if (img && img.complete && img.naturalWidth > 0) {
-          const isAttackFrame = frame === 6;
-          const drawH = Math.round(ch.h * (isAttackFrame ? 1.6 : 1.36));
-          const drawW = Math.round(ch.w * (isAttackFrame ? 2.7 : 2.35));
-          ctx.imageSmoothingEnabled = true;
-          if (ch.hitFlash > 0) {
-            ctx.globalAlpha *= 0.82;
-          }
-          ctx.drawImage(img, -drawW / 2, -drawH / 2 + 8, drawW, drawH);
-        } else {
-          ctx.fillStyle = ch.hitFlash > 0 ? "#fff4f4" : ch.color;
-          ctx.fillRect(-12, -10, 24, 34);
-          ctx.beginPath();
-          ctx.arc(0, -24, 14, 0, Math.PI * 2);
-          ctx.fillStyle = ch.hitFlash > 0 ? "#fff7f7" : ch.secondary;
-          ctx.fill();
+        if (!img || !img.complete || img.naturalWidth <= 0) {
+          ctx.restore();
+          return;
         }
+        const isAttackFrame = frame === 6 || frame === 7;
+        const drawH = Math.round(ch.h * (isAttackFrame ? 1.66 : 1.36));
+        const drawW = Math.round(ch.w * (isAttackFrame ? 2.9 : 2.35));
+        ctx.imageSmoothingEnabled = true;
+        if (ch.hitFlash > 0) {
+          ctx.globalAlpha *= 0.82;
+        }
+        ctx.drawImage(img, -drawW / 2, -drawH / 2 + 8, drawW, drawH);
       } else {
         ctx.scale(ch.facing, 1);
 
@@ -2351,58 +2378,14 @@
       ctx.scale(enemy.facing, 1);
 
       if (enemy.bodyType === "shadowKnight") {
-        const plate = enemy.hurtFlash > 0 ? "#f6f8ff" : enemy.baseColor;
-        const trim = enemy.hurtFlash > 0 ? "#fff4e8" : enemy.accentColor;
-        ctx.fillStyle = plate;
-        ctx.beginPath();
-        ctx.moveTo(-24, 34);
-        ctx.lineTo(-30, -8);
-        ctx.lineTo(-18, -28);
-        ctx.lineTo(18, -28);
-        ctx.lineTo(30, -8);
-        ctx.lineTo(24, 34);
-        ctx.closePath();
-        ctx.fill();
-
-        ctx.fillStyle = trim;
-        ctx.beginPath();
-        ctx.arc(0, -40, 18, 0, Math.PI * 2);
-        ctx.fill();
-
-        ctx.fillStyle = "#171a27";
-        ctx.beginPath();
-        ctx.moveTo(-10, -42);
-        ctx.lineTo(10, -42);
-        ctx.lineTo(12, -28);
-        ctx.lineTo(-12, -28);
-        ctx.closePath();
-        ctx.fill();
-
-        ctx.strokeStyle = enemy.hornColor;
-        ctx.lineWidth = 4;
-        ctx.beginPath();
-        ctx.moveTo(-12, -58); ctx.lineTo(-24, -78);
-        ctx.moveTo(12, -58); ctx.lineTo(24, -78);
-        ctx.stroke();
-
-        ctx.strokeStyle = "rgba(255,180,120,0.9)";
-        ctx.lineWidth = 2.5;
-        ctx.beginPath();
-        ctx.moveTo(-6, -36); ctx.lineTo(-1, -34);
-        ctx.moveTo(6, -36); ctx.lineTo(1, -34);
-        ctx.stroke();
-
-        ctx.fillStyle = "rgba(32,38,58,0.95)";
-        ctx.beginPath();
-        ctx.moveTo(-34, 6);
-        ctx.lineTo(-48, 20);
-        ctx.lineTo(-34, 26);
-        ctx.closePath();
-        ctx.moveTo(34, 6);
-        ctx.lineTo(48, 20);
-        ctx.lineTo(34, 26);
-        ctx.closePath();
-        ctx.fill();
+        const atk = enemy.attackWindup > 0;
+        const img = atk ? tekiSprites.attack : tekiSprites.idle;
+        if (img && img.complete && img.naturalWidth > 0) {
+          const dw = 112;
+          const dh = 128;
+          if (enemy.hurtFlash > 0) ctx.globalAlpha *= 0.84;
+          ctx.drawImage(img, -dw / 2, -dh / 2 + 8, dw, dh);
+        }
       }
 
       if (enemy.bodyType === "beast") {
@@ -2739,7 +2722,9 @@
         const ringColor = hpRatio <= 0.2 ? "#ff5757" : "#5dff9d";
         const faceHtml = c.element === "pyro"
           ? `<img class="partyFaceImg" src="hino_1.png" alt="${c.name} icon">`
-          : `<div class="faceHead"></div><div class="faceBody" style="background:${c.color};"></div>`;
+          : c.element === "hydro"
+            ? `<img class="partyFaceImg" src="mina_1.png" alt="${c.name} icon">`
+            : `<div class="faceHead"></div><div class="faceBody" style="background:${c.color};"></div>`;
         btn.innerHTML = `
           <div class="partyHpRing" style="--hpdeg:${hpPercent}%; --ringColor:${ringColor};"></div>
           <div class="partyFace">
