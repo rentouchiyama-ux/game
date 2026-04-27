@@ -884,10 +884,12 @@
       let dy = clientY - joystickCenter.y;
       let len = Math.hypot(dx, dy);
 
-      const stickSize = joystickArea.offsetWidth || 96;
-      if (len > stickSize) {
-        joystickCenter.x = (joystickCenter.x + clientX) * 0.5;
-        joystickCenter.y = (joystickCenter.y + clientY) * 0.5;
+      if (len > maxLen * 1.5) {
+        const shift = len - maxLen;
+        const sxShift = dx / len * shift;
+        const syShift = dy / len * shift;
+        joystickCenter.x += sxShift;
+        joystickCenter.y += syShift;
         joystickArea.style.left = (joystickCenter.x - (joystickArea.offsetWidth || 96) / 2) + "px";
         joystickArea.style.top = (joystickCenter.y - (joystickArea.offsetHeight || 96) / 2) + "px";
         dx = clientX - joystickCenter.x;
@@ -1676,7 +1678,7 @@
 
       const moveMag = input.moveIntensity;
       ch.moveInputMag = moveMag;
-      const accel = moveMag < 0.5 ? 0.72 : 0.84;
+      const accel = moveMag < 0.45 ? 0.34 : 0.82;
 
       if (input.moveX < -0.12) {
         ch.vx -= accel * moveMag;
